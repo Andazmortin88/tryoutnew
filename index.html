@@ -375,9 +375,7 @@ function App(){
     }catch(err){
       console.error('submitAttemptSecure',err);
       setAuthMessage('Submit gagal: '+(err.message||err));
-      alert('Jawaban belum berhasil dikumpulkan. Sesi tetap tersimpan, jadi Anda dapat mencoba submit lagi.
-
-'+(err.message||err));
+      alert('Jawaban belum berhasil dikumpulkan. Sesi tetap tersimpan, jadi Anda dapat mencoba submit lagi.\n\n'+(err.message||err));
     }
   }
 
