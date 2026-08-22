@@ -1,504 +1,111 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0f172a" />
-  <title>UKOM Ners Pro AI — V3 Secure</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: { extend: { fontFamily: { sans: ['Inter','sans-serif'] } } }
-    }
-  </script>
-  <style>
-    body { font-family: Inter, sans-serif; background:#f8fafc; }
-    .scrollbar::-webkit-scrollbar{width:7px;height:7px}.scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
-    .glass{background:rgba(255,255,255,.78);backdrop-filter:blur(16px)}
-    @media print {.no-print{display:none!important}.print-break{break-before:page}}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#081226"/>
+<title>UKOM Nursing Pro AI — Ners & D3 Keperawatan</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']},boxShadow:{glow:'0 0 60px rgba(99,102,241,.28)'}}}}</script>
+<style>
+html{scroll-behavior:smooth} body{font-family:Inter,sans-serif;background:#f8fafc;color:#0f172a}.scrollbar::-webkit-scrollbar{width:7px;height:7px}.scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.glass{background:rgba(255,255,255,.72);backdrop-filter:blur(18px)}
+.hero-grid{background-image:linear-gradient(rgba(148,163,184,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.08) 1px,transparent 1px);background-size:38px 38px}
+.orb-wrap{perspective:1000px}.orb{width:320px;height:320px;border-radius:50%;position:relative;transform-style:preserve-3d;animation:float 6s ease-in-out infinite;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.95),rgba(129,140,248,.38) 18%,rgba(79,70,229,.34) 44%,rgba(15,23,42,.92) 76%);box-shadow:inset -30px -40px 80px rgba(2,6,23,.6),inset 22px 20px 50px rgba(255,255,255,.15),0 35px 90px rgba(79,70,229,.35)}
+.orb:before,.orb:after{content:"";position:absolute;inset:13%;border-radius:50%;border:1px solid rgba(255,255,255,.2);transform:rotateX(68deg) rotateZ(18deg)}.orb:after{inset:24%;transform:rotateY(68deg) rotateZ(-22deg)}
+.float-card{position:absolute;border:1px solid rgba(255,255,255,.18);background:rgba(15,23,42,.72);backdrop-filter:blur(12px);border-radius:18px;padding:12px 14px;color:white;box-shadow:0 18px 50px rgba(2,6,23,.35);animation:cardFloat 5s ease-in-out infinite}.float-card.a{top:28px;left:-60px}.float-card.b{right:-65px;top:115px;animation-delay:1.1s}.float-card.c{left:-20px;bottom:8px;animation-delay:2s}
+@keyframes float{0%,100%{transform:translateY(0) rotateY(-8deg)}50%{transform:translateY(-18px) rotateY(8deg)}}@keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.tilt{transition:transform .25s ease,box-shadow .25s ease}.tilt:hover{transform:translateY(-6px) rotateX(2deg) rotateY(-2deg);box-shadow:0 30px 70px rgba(15,23,42,.12)}
+@media(max-width:768px){.orb{width:250px;height:250px}.float-card{font-size:11px}.float-card.a{left:-30px}.float-card.b{right:-35px}}
+@media print{.no-print{display:none!important}.print-break{break-before:page}}
+</style>
 </head>
-<body>
-<div id="root"></div>
+<body><div id="root"></div>
 <script type="text/babel">
-const {useEffect,useMemo,useState} = React;
-
-// -----------------------------------------------------------------------------
-// V3 SECURE: bank soal tidak ditanam di frontend.
-// Browser hanya menerima vignette + opsi A-E dari Supabase RPC.
-// Kunci dan pembahasan baru dikirim setelah attempt selesai dan dinilai server-side.
-
-// -----------------------------------------------------------------------------
-// KONFIGURASI INTEGRASI (isi sebelum production deploy)
-// Supabase: Project Settings -> API -> Project URL + Publishable/Anon Key
-// YouTube: gunakan CHANNEL ID (format biasanya UC...), bukan handle @...
-// -----------------------------------------------------------------------------
-const APP_CONFIG = {
-  SUPABASE_URL: 'https://rnvmaihjaxpvsgnaczod.supabase.co',
-  SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_Ma5Bmh-wMjTWWGsBrLfOvA_mEsqleHA',
-  YOUTUBE_CHANNEL_ID: 'YOUR_YOUTUBE_CHANNEL_ID',
-  YOUTUBE_CHANNEL_URL: 'https://youtube.com/@andazmortin',
-  TIKTOK_PROFILE_URL: 'https://tiktok.com/@andaz_mortin'
+const {useEffect,useMemo,useState}=React;
+const APP_CONFIG={
+  SUPABASE_URL:'https://rnvmaihjaxpvsgnaczod.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY:'sb_publishable_Ma5Bmh-wMjTWWGsBrLfOvA_mEsqleHA',
+  PAYMENT_EDGE_FUNCTION:'create-midtrans-transaction',
+  PROMO_PRICE:40000,
+  NORMAL_PRICE:150000
 };
-const AUTH_CONFIGURED = !APP_CONFIG.SUPABASE_URL.startsWith('YOUR_') && !APP_CONFIG.SUPABASE_PUBLISHABLE_KEY.startsWith('YOUR_');
-const supabaseClient = AUTH_CONFIGURED ? window.supabase.createClient(APP_CONFIG.SUPABASE_URL, APP_CONFIG.SUPABASE_PUBLISHABLE_KEY) : null;
-
-const STORAGE = {
-  PROFILE:'ukom_v2_profile', ATTEMPTS:'ukom_v2_attempts', WRONG:'ukom_v2_wrong_ids',
-  SESSION:'ukom_v2_active_session', FAVORITES:'ukom_v2_favorites',
-  DEMO_AUTH:'ukom_v2_demo_auth', PENDING_YT:'ukom_v2_pending_youtube_subscribe'
-};
-const AREAS = ['Gawat Darurat','KMB','Anak','Maternitas','Jiwa','Gerontik','Komunitas','Manajemen','Etik','Keluarga'];
-const LETTERS = ['A','B','C','D','E'];
-
-function load(key, fallback){ try { const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; } catch { return fallback; } }
-function save(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function prepareQuestion(q, randomize=true){
-  if(!randomize) return {...q, optionMap:[0,1,2,3,4]};
-  const pairs=q.options.map((text,originalIndex)=>({text,originalIndex}));
-  const randomized=shuffle(pairs);
-  return {...q, options:randomized.map(x=>x.text), optionMap:randomized.map(x=>x.originalIndex)};
-}
-function fmtTime(sec){ const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return `${h?String(h).padStart(2,'0')+':':''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-function readiness(score){
-  if(score>=75) return {label:'Kesiapan Tinggi',tone:'emerald',message:'Pertahankan konsistensi dan fokuskan latihan pada area terlemah.'};
-  if(score>=60) return {label:'Kesiapan Sedang',tone:'amber',message:'Dasar sudah cukup, tetapi masih ada area yang perlu penguatan terarah.'};
-  return {label:'Perlu Penguatan',tone:'rose',message:'Prioritaskan latihan per rumpun dan ulangi soal yang masih salah.'};
-}
-function average(xs){ return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0; }
+const supabaseClient=window.supabase.createClient(APP_CONFIG.SUPABASE_URL,APP_CONFIG.SUPABASE_PUBLISHABLE_KEY);
+const LETTERS=['A','B','C','D','E'];
+const AREAS=['KMB','Maternitas','Anak','Jiwa','Keluarga','Gerontik','Manajemen','Gawat Darurat','Komunitas','Etik'];
+const STORAGE={SESSION:'ukom_v4_active_session',FAVORITES:'ukom_v4_favorites'};
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function shuffle(a){const x=[...a];for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x}
+function prepareQuestion(q,randomize=true){if(!randomize)return{...q,optionMap:[0,1,2,3,4]};const p=shuffle(q.options.map((text,originalIndex)=>({text,originalIndex})));return{...q,options:p.map(x=>x.text),optionMap:p.map(x=>x.originalIndex)}}
+function fmtTime(sec){const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return `${h?String(h).padStart(2,'0')+':':''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function money(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
+function readiness(s){if(s>=75)return{label:'Kesiapan Tinggi',tone:'emerald',message:'Pertahankan konsistensi dan fokuskan latihan pada area terlemah.'};if(s>=60)return{label:'Kesiapan Sedang',tone:'amber',message:'Dasar cukup, tetapi masih ada area yang perlu penguatan terarah.'};return{label:'Perlu Penguatan',tone:'rose',message:'Prioritaskan latihan per area dan ulangi soal yang masih salah.'}}
+function programLabel(p){return p==='d3'?'D3 Keperawatan':'Profesi Ners'}
 
 function App(){
-  const [profile,setProfile]=useState(()=>load(STORAGE.PROFILE,{name:'Mahasiswa',institution:'',target:'UKOM Ners'}));
-  const [attempts,setAttempts]=useState(()=>load(STORAGE.ATTEMPTS,[]));
-  const [wrongIds,setWrongIds]=useState(()=>load(STORAGE.WRONG,[]));
-  const [favorites,setFavorites]=useState(()=>load(STORAGE.FAVORITES,[]));
-  const [view,setView]=useState('dashboard'); // dashboard | setup | exam | result | history | profile
-  const [setup,setSetup]=useState({mode:'tryout',area:'Semua',count:20,randomize:true});
-  const [session,setSession]=useState(null);
-  const [lastAttempt,setLastAttempt]=useState(null);
-  const [authUser,setAuthUser]=useState(null);
-  const [authLoading,setAuthLoading]=useState(AUTH_CONFIGURED);
-  const [authMessage,setAuthMessage]=useState('');
-  const [socialStatus,setSocialStatus]=useState({youtube:false,tiktok:false});
+ const [authUser,setAuthUser]=useState(null),[authLoading,setAuthLoading]=useState(true);
+ const [profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false);
+ const [access,setAccess]=useState(null),[attempts,setAttempts]=useState([]),[wrongIds,setWrongIds]=useState([]),[favorites,setFavorites]=useState(()=>load(STORAGE.FAVORITES,[]));
+ const [view,setView]=useState('dashboard'),[setup,setSetup]=useState({mode:'learn',area:'Semua',count:20,randomize:true});
+ const [session,setSession]=useState(null),[lastAttempt,setLastAttempt]=useState(null),[message,setMessage]=useState(''),[paywall,setPaywall]=useState(false);
+ useEffect(()=>save(STORAGE.FAVORITES,favorites),[favorites]);
+ useEffect(()=>{let mounted=true;supabaseClient.auth.getSession().then(({data})=>{if(mounted){setAuthUser(data.session?.user||null);setAuthLoading(false)}});const {data:{subscription}}=supabaseClient.auth.onAuthStateChange((_e,s)=>{if(mounted){setAuthUser(s?.user||null);setAuthLoading(false)}});return()=>{mounted=false;subscription?.unsubscribe()}},[]);
+ useEffect(()=>{if(authUser?.id)loadProfile();else{setProfile(null);setAccess(null);setAttempts([]);setWrongIds([])}},[authUser?.id]);
+ useEffect(()=>{if(profile?.program){refreshAccess();loadCloudProgress(profile.program)}},[profile?.program]);
 
+ async function googleLogin(){const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});if(error)setMessage(error.message)}
+ async function signOut(){await supabaseClient.auth.signOut();setView('dashboard')}
+ async function loadProfile(){setProfileLoading(true);try{const {data,error}=await supabaseClient.from('profiles').select('*').eq('id',authUser.id).maybeSingle();if(error)throw error;setProfile(data||{id:authUser.id,full_name:authUser.user_metadata?.full_name||authUser.user_metadata?.name||'',email:authUser.email,institution:'',program:null,target_ukom:'2026',phone:''})}catch(e){setMessage('Profil belum dapat dimuat: '+e.message)}finally{setProfileLoading(false)}}
+ async function saveProfile(form){const {data,error}=await supabaseClient.rpc('save_my_profile',{p_full_name:form.full_name,p_institution:form.institution,p_program:form.program,p_target_ukom:form.target_ukom||null,p_phone:form.phone||null});if(error)throw error;await loadProfile();return data}
+ async function refreshAccess(){if(!authUser?.id)return;const {data,error}=await supabaseClient.rpc('get_my_access');if(error){setMessage('Status akses gagal dimuat: '+error.message);return}setAccess(data)}
+ async function loadCloudProgress(program){try{const {data:rows,error}=await supabaseClient.from('attempts').select('id,mode,started_at,finished_at,score,total_questions,metadata').eq('user_id',authUser.id).order('finished_at',{ascending:false}).limit(100);if(error)throw error;const programRows=(rows||[]).filter(r=>(r.metadata?.program||'ners')===program);const ats=programRows.map(r=>({id:r.id,mode:r.mode,startedAt:r.started_at,createdAt:r.finished_at||r.started_at,score:Number(r.score||0),total:Number(r.total_questions||0),correct:Number(r.metadata?.correct||0),answered:Number(r.metadata?.answered||0),byArea:r.metadata?.byArea||{},wrongIds:r.metadata?.wrongIds||[]}));setAttempts(ats);const ids=new Set(programRows.map(r=>r.id));if(!ids.size){setWrongIds([]);return}const {data:ans}=await supabaseClient.from('attempt_answers').select('attempt_id,question_id,is_correct,answered_at').in('attempt_id',[...ids]).order('answered_at',{ascending:true});const wrong=new Set();(ans||[]).forEach(r=>{if(r.is_correct===true)wrong.delete(Number(r.question_id));else if(r.is_correct===false)wrong.add(Number(r.question_id))});setWrongIds([...wrong])}catch(e){setMessage('Riwayat belum dapat dimuat: '+e.message)}}
+ function updateSession(fn){setSession(prev=>{const next=typeof fn==='function'?fn(prev):fn;if(next)save(STORAGE.SESSION,next);return next})}
+ async function startSession(cfg){const mode=cfg.mode;if(mode!=='trial'&&!access?.premium){setPaywall(true);return}if(mode==='trial'&&access?.trial_used){setMessage('Trial 20 soal untuk program ini sudah pernah digunakan.');return}if(mode==='wrong'&&!wrongIds.length){setMessage('Belum ada soal salah untuk diremediasi.');return}const count=mode==='tryout'?180:mode==='trial'?20:Math.min(Number(cfg.count)||20,180);setMessage('Mengambil soal dari Supabase…');const {data,error}=await supabaseClient.rpc('get_exam_questions',{p_limit:count,p_area:mode==='wrong'||cfg.area==='Semua'?null:cfg.area,p_ids:mode==='wrong'?wrongIds:null,p_mode:mode});if(error){if(String(error.message).includes('PREMIUM_REQUIRED'))setPaywall(true);else setMessage('Gagal mengambil soal: '+error.message);return}const qs=(data||[]).map(row=>prepareQuestion({id:Number(row.id),rumpun:row.area,subtopic:row.subtopic||'',text:row.vignette,options:[row.option_a,row.option_b,row.option_c,row.option_d,row.option_e],difficulty:row.difficulty,cognitiveLevel:row.cognitive_level,blueprintTag:row.blueprint_tag},cfg.randomize!==false));if(!qs.length){setMessage('Belum ada soal aktif untuk pilihan ini.');return}const s={mode,area:cfg.area,questions:qs,answers:{},flagged:[],current:0,startedAt:new Date().toISOString(),timeLeft:(mode==='tryout'?qs.length*60:null)};setSession(s);save(STORAGE.SESSION,s);setView('exam');setMessage('')}
+ async function finishSession(){if(!session)return;try{setMessage('Menghitung hasil secara aman di Supabase…');const payload=session.questions.map((q,i)=>({question_id:Number(q.id),selected_option:session.answers[i]===undefined?null:Number((q.optionMap||[0,1,2,3,4])[session.answers[i]]),is_flagged:session.flagged.includes(i)}));const {data,error}=await supabaseClient.rpc('submit_ukom_attempt',{p_mode:session.mode,p_started_at:session.startedAt,p_answers:payload});if(error)throw error;const reviewMap=new Map((data.review||[]).map(r=>[Number(r.question_id),r]));const reviewQuestions=session.questions.map(q=>{const r=reviewMap.get(Number(q.id))||{};const originalCorrect=Number(r.correct_option);return{...q,correctAnswer:(q.optionMap||[0,1,2,3,4]).indexOf(originalCorrect),explanation:r.explanation||'Pembahasan belum tersedia.'}});const a={id:data.attempt_id,program:data.program,createdAt:data.finished_at,startedAt:session.startedAt,mode:session.mode,score:Number(data.score||0),correct:Number(data.correct||0),answered:Number(data.answered||0),total:Number(data.total||session.questions.length),byArea:data.byArea||{},wrongIds:(data.wrongIds||[]).map(Number),questions:reviewQuestions,answers:session.answers,flagged:session.flagged};localStorage.removeItem(STORAGE.SESSION);setSession(null);setLastAttempt(a);await refreshAccess();await loadCloudProgress(profile.program);setView('result');setMessage('')}catch(e){setMessage('Submit gagal: '+e.message)}}
+ async function checkout(){try{setMessage('Membuat transaksi pembayaran…');const {data,error}=await supabaseClient.functions.invoke(APP_CONFIG.PAYMENT_EDGE_FUNCTION,{body:{program:profile.program,plan:'launch_30'}});if(error)throw error;if(data?.redirect_url){window.open(data.redirect_url,'_blank','noopener,noreferrer');setMessage('Halaman pembayaran dibuka. Setelah pembayaran berhasil, kembali ke aplikasi lalu klik Cek Status Akses.')}else throw new Error(data?.error||'redirect_url tidak diterima')}catch(e){setMessage('Payment gateway belum aktif atau belum dikonfigurasi: '+e.message)} }
 
-  useEffect(()=>save(STORAGE.PROFILE,profile),[profile]);
-  useEffect(()=>save(STORAGE.ATTEMPTS,attempts),[attempts]);
-  useEffect(()=>save(STORAGE.WRONG,wrongIds),[wrongIds]);
-  useEffect(()=>save(STORAGE.FAVORITES,favorites),[favorites]);
-  useEffect(()=>{
-    if(authUser && profile.name==='Mahasiswa'){
-      const googleName=authUser.user_metadata?.full_name||authUser.user_metadata?.name||authUser.email?.split('@')[0];
-      if(googleName) setProfile(p=>({...p,name:googleName}));
-    }
-  },[authUser]);
-
-  useEffect(()=>{
-    if(authUser?.id && AUTH_CONFIGURED) loadCloudProgress(authUser.id);
-  },[authUser?.id]);
-
-
-  // Google OAuth via Supabase. Login dan register Google menggunakan flow OAuth yang sama:
-  // akun baru otomatis dibuat pada login pertama.
-  useEffect(()=>{
-    if(!AUTH_CONFIGURED){
-      const demo=load(STORAGE.DEMO_AUTH,null);
-      if(demo) setAuthUser(demo);
-      setAuthLoading(false);
-      return;
-    }
-    let mounted=true;
-    supabaseClient.auth.getSession().then(({data})=>{
-      if(!mounted) return;
-      setAuthUser(data.session?.user||null);
-      setAuthLoading(false);
-    });
-    const {data:{subscription}}=supabaseClient.auth.onAuthStateChange(async(event,authSession)=>{
-      if(!mounted) return;
-      setAuthUser(authSession?.user||null);
-      setAuthLoading(false);
-      // Jika user menekan Subscribe YouTube sebelum redirect OAuth,
-      // lanjutkan subscriptions.insert setelah kembali dari consent screen.
-      const pending=localStorage.getItem(STORAGE.PENDING_YT)==='1';
-      if(pending && authSession?.provider_token){
-        localStorage.removeItem(STORAGE.PENDING_YT);
-        await subscribeYouTubeWithToken(authSession.provider_token);
-      }
-    });
-    return()=>{mounted=false;subscription?.unsubscribe();};
-  },[]);
-
-  async function googleOAuth(extraScopes=''){
-    if(!AUTH_CONFIGURED){
-      const demo={id:'demo-user',email:'demo@ukom.local',user_metadata:{full_name:'Mahasiswa Demo',avatar_url:''}};
-      save(STORAGE.DEMO_AUTH,demo); setAuthUser(demo); setAuthMessage('Mode demo aktif. Isi konfigurasi Supabase untuk Google Login sungguhan.');
-      return;
-    }
-    const scopes=['openid','email','profile',extraScopes].filter(Boolean).join(' ');
-    const {error}=await supabaseClient.auth.signInWithOAuth({
-      provider:'google',
-      options:{
-        redirectTo:window.location.origin+window.location.pathname,
-        scopes,
-        queryParams: extraScopes ? {access_type:'offline',prompt:'consent'} : undefined
-      }
-    });
-    if(error) setAuthMessage(error.message);
-  }
-
-  async function signOut(){
-    if(AUTH_CONFIGURED) await supabaseClient.auth.signOut();
-    localStorage.removeItem(STORAGE.DEMO_AUTH);
-    setAuthUser(null); setAuthMessage('');
-  }
-
-  async function subscribeYouTubeWithToken(providerToken){
-    if(!APP_CONFIG.YOUTUBE_CHANNEL_ID || APP_CONFIG.YOUTUBE_CHANNEL_ID.startsWith('YOUR_')){
-      setAuthMessage('Isi APP_CONFIG.YOUTUBE_CHANNEL_ID dengan Channel ID YouTube Anda (UC...) terlebih dahulu.');
-      window.open(APP_CONFIG.YOUTUBE_CHANNEL_URL,'_blank','noopener,noreferrer');
-      return;
-    }
-    try{
-      const res=await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet',{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${providerToken}`,'Content-Type':'application/json'},
-        body:JSON.stringify({snippet:{resourceId:{kind:'youtube#channel',channelId:APP_CONFIG.YOUTUBE_CHANNEL_ID}}})
-      });
-      if(res.ok){
-        setSocialStatus(s=>({...s,youtube:true}));
-        setAuthMessage('Berhasil subscribe channel YouTube.');
-        return;
-      }
-      const body=await res.json().catch(()=>({}));
-      const reason=body?.error?.errors?.[0]?.reason;
-      if(reason==='subscriptionDuplicate'){
-        setSocialStatus(s=>({...s,youtube:true}));
-        setAuthMessage('Akun Google ini sudah subscribe channel Anda.');
-      }else{
-        setAuthMessage('YouTube API gagal: '+(body?.error?.message||res.status));
-      }
-    }catch(err){ setAuthMessage('Tidak dapat menghubungi YouTube API: '+err.message); }
-  }
-
-  async function requestYouTubeSubscribe(){
-    if(!AUTH_CONFIGURED){
-      window.open(APP_CONFIG.YOUTUBE_CHANNEL_URL,'_blank','noopener,noreferrer');
-      setAuthMessage('Mode demo: channel YouTube dibuka. Untuk subscribe via API, aktifkan Supabase + OAuth YouTube.');
-      return;
-    }
-    // User harus memberi izin eksplisit ke scope YouTube. Setelah consent, aplikasi
-    // melanjutkan subscribe secara otomatis karena tombol ini adalah aksi pengguna.
-    localStorage.setItem(STORAGE.PENDING_YT,'1');
-    await googleOAuth('https://www.googleapis.com/auth/youtube.force-ssl');
-  }
-
-  function openTikTok(){
-    // TikTok saat ini tidak menyediakan public write scope untuk mem-follow akun.
-    // Karena itu aplikasi hanya dapat membuka profile/deep link; follow tetap dilakukan pengguna di TikTok.
-    window.open(APP_CONFIG.TIKTOK_PROFILE_URL,'_blank','noopener,noreferrer');
-    setSocialStatus(s=>({...s,tiktok:true}));
-    setAuthMessage('Profil TikTok dibuka. TikTok tidak menyediakan API publik untuk auto-follow akun.');
-  }
-
-  // ---------------------------------------------------------------------------
-  // SUPABASE CLOUD SYNC: attempts + attempt_answers
-  // ---------------------------------------------------------------------------
-  function dbRowToAttempt(row){
-    const m=row.metadata||{};
-    return {
-      id:row.id,
-      createdAt:row.finished_at||row.started_at,
-      startedAt:row.started_at,
-      mode:row.mode,
-      score:Number(row.score||0),
-      correct:Number(m.correct||0),
-      total:Number(row.total_questions||0),
-      answered:Number(m.answered||0),
-      byArea:m.byArea||{},
-      wrongIds:m.wrongIds||[]
-    };
-  }
-
-  async function loadCloudProgress(userId){
-    if(!AUTH_CONFIGURED || !userId) return;
-    try{
-      const {data:attemptRows,error:attemptErr}=await supabaseClient
-        .from('attempts')
-        .select('id,user_id,mode,started_at,finished_at,score,total_questions,metadata')
-        .eq('user_id',userId)
-        .order('finished_at',{ascending:false})
-        .limit(100);
-      if(attemptErr) throw attemptErr;
-      const cloudAttempts=(attemptRows||[]).map(dbRowToAttempt);
-      setAttempts(cloudAttempts);
-
-      // Rekonstruksi "soal salah saya" berdasarkan jawaban paling baru per soal.
-      const {data:answerRows,error:answerErr}=await supabaseClient
-        .from('attempt_answers')
-        .select('question_id,is_correct,answered_at')
-        .order('answered_at',{ascending:true});
-      if(!answerErr && answerRows){
-        const wrong=new Set();
-        answerRows.forEach(r=>{
-          if(r.is_correct===true) wrong.delete(r.question_id);
-          else if(r.is_correct===false) wrong.add(r.question_id);
-        });
-        setWrongIds([...wrong]);
-      }
-      setAuthMessage('Progres tersinkron dengan Supabase.');
-    }catch(err){
-      console.error('loadCloudProgress',err);
-      setAuthMessage('Login berhasil, tetapi riwayat cloud belum dapat dimuat: '+(err.message||err));
-    }
-  }
-
-  async function submitAttemptSecure(examSession){
-    if(!AUTH_CONFIGURED || !authUser?.id) throw new Error('Login Supabase diperlukan.');
-    const payload=examSession.questions.map((q,i)=>({
-      question_id:Number(q.id),
-      selected_option:examSession.answers[i]===undefined
-        ? null
-        : Number((q.optionMap||[0,1,2,3,4])[examSession.answers[i]]),
-      is_flagged:(examSession.flagged||[]).includes(i)
-    }));
-    const {data,error}=await supabaseClient.rpc('submit_ukom_attempt',{
-      p_mode:examSession.mode,
-      p_started_at:examSession.startedAt,
-      p_answers:payload
-    });
-    if(error) throw error;
-    return data;
-  }
-
-  async function clearCloudHistory(){
-    if(!AUTH_CONFIGURED || !authUser?.id) return;
-    if(!confirm('Hapus seluruh riwayat tryout Anda dari Supabase? Tindakan ini tidak dapat dibatalkan.')) return;
-    const {error}=await supabaseClient.rpc('clear_my_attempt_history');
-    if(error){ alert('Gagal menghapus riwayat: '+error.message); return; }
-    setAttempts([]); setWrongIds([]);
-    setAuthMessage('Riwayat cloud berhasil dihapus.');
-  }
-
-  function updateSession(nextOrUpdater){
-    setSession(prev=>{
-      const next=typeof nextOrUpdater==='function'?nextOrUpdater(prev):nextOrUpdater;
-      if(next) save(STORAGE.SESSION,next);
-      return next;
-    });
-  }
-
-
-  const latest=attempts[0];
-  const avg=+average(attempts.map(a=>a.score)).toFixed(1);
-  const best=attempts.length?Math.max(...attempts.map(a=>a.score)):0;
-  const aggregate=useMemo(()=>{
-    const data={}; AREAS.forEach(a=>data[a]={correct:0,total:0});
-    attempts.slice(0,10).forEach(at=>Object.entries(at.byArea||{}).forEach(([area,v])=>{ data[area]||={correct:0,total:0}; data[area].correct+=v.correct; data[area].total+=v.total; }));
-    return data;
-  },[attempts]);
-  const weakest=Object.entries(aggregate).filter(([,v])=>v.total>0).sort((a,b)=>(a[1].correct/a[1].total)-(b[1].correct/b[1].total))[0]?.[0];
-
-  async function startSession(custom=setup){
-    if(!AUTH_CONFIGURED || !authUser?.id){ alert('Silakan login terlebih dahulu.'); return; }
-    if(custom.mode==='wrong' && !wrongIds.length){ alert('Belum ada soal salah untuk diremediasi.'); return; }
-    const requested=custom.mode==='tryout' ? 180 : Math.min(+custom.count||20,180);
-    setAuthMessage('Mengambil soal aman dari Supabase…');
-    const {data,error}=await supabaseClient.rpc('get_exam_questions',{
-      p_limit:requested,
-      p_area:custom.mode==='wrong'||custom.area==='Semua' ? null : custom.area,
-      p_ids:custom.mode==='wrong' ? wrongIds.map(Number) : null
-    });
-    if(error){
-      console.error(error);
-      setAuthMessage('Gagal mengambil soal: '+error.message);
-      alert('Gagal mengambil soal dari Supabase. '+error.message);
-      return;
-    }
-    if(!data?.length){ alert('Belum ada soal pada pilihan ini.'); return; }
-    const picked=data.map(row=>prepareQuestion({
-      id:Number(row.id),
-      rumpun:row.area,
-      subtopic:row.subtopic||'',
-      text:row.vignette,
-      options:[row.option_a,row.option_b,row.option_c,row.option_d,row.option_e],
-      difficulty:row.difficulty,
-      cognitiveLevel:row.cognitive_level,
-      blueprintTag:row.blueprint_tag
-    },custom.randomize!==false));
-    const s={
-      id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),
-      mode:custom.mode, area:custom.area, questions:picked, answers:{}, flagged:[], current:0,
-      startedAt:new Date().toISOString(), timeLeft: custom.mode==='tryout'?picked.length*60:null,
-      reveal:{}, tutorOpen:null
-    };
-    setSession(s); save(STORAGE.SESSION,s); setView('exam');
-    setAuthMessage(`${picked.length} soal berhasil dimuat dari Supabase.`);
-  }
-  function resumeSession(){ const s=load(STORAGE.SESSION,null); if(s){setSession(s);setView('exam');} }
-  async function finishSession(){
-    if(!session) return;
-    try{
-      setAuthMessage('Mengirim jawaban dan menghitung nilai di server Supabase…');
-      const result=await submitAttemptSecure(session);
-      const reviewMap=new Map((result.review||[]).map(r=>[Number(r.question_id),r]));
-      const reviewQuestions=session.questions.map(q=>{
-        const r=reviewMap.get(Number(q.id))||{};
-        const originalCorrect=Number(r.correct_option);
-        const displayedCorrect=(q.optionMap||[0,1,2,3,4]).indexOf(originalCorrect);
-        return {...q,correctAnswer:displayedCorrect,explanation:r.explanation||'Pembahasan belum tersedia.'};
-      });
-      const a={
-        id:result.attempt_id,
-        createdAt:result.finished_at||new Date().toISOString(),
-        startedAt:session.startedAt,
-        mode:session.mode,
-        score:Number(result.score||0),
-        correct:Number(result.correct||0),
-        total:Number(result.total||session.questions.length),
-        answered:Number(result.answered||0),
-        byArea:result.byArea||{},
-        wrongIds:(result.wrongIds||[]).map(Number)
-      };
-      localStorage.removeItem(STORAGE.SESSION);
-      setSession(null);
-      setLastAttempt({...a,questions:reviewQuestions,answers:session.answers,flagged:session.flagged});
-      setAttempts(prev=>[a,...prev.filter(x=>x.id!==a.id)].slice(0,100));
-      await loadCloudProgress(authUser.id);
-      setAuthMessage('Nilai dihitung server-side dan seluruh jawaban tersimpan di Supabase.');
-      setView('result');
-    }catch(err){
-      console.error('submitAttemptSecure',err);
-      setAuthMessage('Submit gagal: '+(err.message||err));
-      alert('Jawaban belum berhasil dikumpulkan. Sesi tetap tersimpan, jadi Anda dapat mencoba submit lagi.\n\n'+(err.message||err));
-    }
-  }
-
-  if(authLoading) return <div className="min-h-screen grid place-items-center bg-slate-950 text-white"><div className="text-center"><div className="w-14 h-14 rounded-2xl bg-indigo-500 grid place-items-center font-black text-2xl mx-auto">N</div><div className="font-black mt-4">Memuat UKOM Ners Pro AI…</div></div></div>;
-  if(!authUser) return <AuthGate onGoogle={()=>googleOAuth()} authConfigured={AUTH_CONFIGURED} message={authMessage}/>;
-
-  return <div className="min-h-screen text-slate-800">
-    {view!=='exam' && <TopNav view={view} setView={setView} profile={profile} authUser={authUser} onSignOut={signOut}/>} 
-    {view==='dashboard' && <Dashboard profile={profile} attempts={attempts} avg={avg} best={best} latest={latest} aggregate={aggregate} weakest={weakest} wrongCount={wrongIds.length} hasSession={!!load(STORAGE.SESSION,null)} onResume={resumeSession} onStart={()=>setView('setup')} socialStatus={socialStatus} authMessage={authMessage} onYouTube={requestYouTubeSubscribe} onTikTok={openTikTok} onStartWrong={()=>startSession({mode:'wrong',area:'Semua',count:20,randomize:true})} setView={setView}/>} 
-    {view==='setup' && <Setup setup={setup} setSetup={setSetup} wrongCount={wrongIds.length} onStart={()=>startSession()} onBack={()=>setView('dashboard')}/>} 
-    {view==='exam' && session && <Exam session={session} setSession={updateSession} onFinish={finishSession} favorites={favorites} setFavorites={setFavorites}/>} 
-    {view==='result' && lastAttempt && <Result attempt={lastAttempt} onDashboard={()=>setView('dashboard')} onWeak={(area)=>{setSetup({mode:'learn',area,count:20,randomize:true});setView('setup')}}/>}
-    {view==='history' && <History attempts={attempts} setAttempts={setAttempts} onClearCloud={clearCloudHistory} cloud={AUTH_CONFIGURED} onBack={()=>setView('dashboard')}/>} 
-    {view==='profile' && <Profile profile={profile} setProfile={setProfile} onBack={()=>setView('dashboard')}/>} 
-  </div>
+ if(authLoading)return <Splash/>;
+ if(!authUser)return <Marketing onLogin={googleLogin}/>;
+ if(profileLoading||!profile)return <Splash text="Memuat profil mahasiswa…"/>;
+ const complete=profile.full_name&&profile.institution&&['ners','d3'].includes(profile.program);
+ if(!complete)return <Onboarding initial={profile} user={authUser} onSave={saveProfile}/>;
+ const latest=attempts[0],avg=attempts.length?(attempts.reduce((a,b)=>a+b.score,0)/attempts.length).toFixed(1):0,best=attempts.length?Math.max(...attempts.map(a=>a.score)):0;
+ const aggregate={};AREAS.forEach(a=>aggregate[a]={correct:0,total:0});attempts.slice(0,10).forEach(at=>Object.entries(at.byArea||{}).forEach(([a,v])=>{aggregate[a]||={correct:0,total:0};aggregate[a].correct+=v.correct;aggregate[a].total+=v.total}));
+ const weakest=Object.entries(aggregate).filter(([,v])=>v.total>0).sort((a,b)=>(a[1].correct/a[1].total)-(b[1].correct/b[1].total))[0]?.[0];
+ return <div className="min-h-screen">{view!=='exam'&&<TopNav profile={profile} access={access} setView={setView} onSignOut={signOut}/>} {view==='dashboard'&&<Dashboard profile={profile} access={access} attempts={attempts} latest={latest} avg={avg} best={best} aggregate={aggregate} weakest={weakest} wrongCount={wrongIds.length} message={message} onTrial={()=>startSession({mode:'trial',area:'Semua',count:20,randomize:true})} onPremium={()=>setView('setup')} onWrong={()=>startSession({mode:'wrong',area:'Semua',count:20,randomize:true})} onPricing={()=>setPaywall(true)} onRefresh={async()=>{await refreshAccess();await loadCloudProgress(profile.program)}} setView={setView}/>} {view==='setup'&&<Setup setup={setup} setSetup={setSetup} premium={access?.premium} wrongCount={wrongIds.length} onStart={()=>startSession(setup)} onBack={()=>setView('dashboard')} onPricing={()=>setPaywall(true)}/>} {view==='exam'&&session&&<Exam session={session} setSession={updateSession} onFinish={finishSession} favorites={favorites} setFavorites={setFavorites}/>} {view==='result'&&lastAttempt&&<Result attempt={lastAttempt} onDashboard={()=>setView('dashboard')} onWeak={a=>{setSetup({mode:'learn',area:a,count:20,randomize:true});setView('setup')}}/>} {view==='history'&&<History attempts={attempts} onBack={()=>setView('dashboard')}/>} {view==='profile'&&<Profile profile={profile} onSave={async f=>{await saveProfile(f);setView('dashboard')}} onBack={()=>setView('dashboard')}/>} {paywall&&<Pricing onClose={()=>setPaywall(false)} onCheckout={checkout} onRefresh={refreshAccess} program={profile.program} message={message}/>}</div>
 }
 
-
-function AuthGate({onGoogle,authConfigured,message}){
- return <main className="min-h-screen bg-slate-950 text-white grid place-items-center p-4 relative overflow-hidden">
-  <div className="absolute -top-20 -left-20 w-80 h-80 bg-indigo-600/30 blur-3xl rounded-full"></div><div className="absolute -bottom-20 -right-20 w-80 h-80 bg-emerald-500/20 blur-3xl rounded-full"></div>
-  <div className="relative w-full max-w-md bg-white text-slate-900 rounded-[2rem] p-7 md:p-9 shadow-2xl">
-   <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white grid place-items-center text-2xl font-black">N</div>
-   <h1 className="text-3xl font-black mt-6">UKOM Ners Pro <span className="text-indigo-600">AI</span></h1>
-   <p className="text-slate-500 mt-2">Masuk untuk menyimpan progres tryout, analisis kelemahan, dan riwayat belajar Anda.</p>
-   <button onClick={onGoogle} className="mt-7 w-full py-3.5 rounded-xl border-2 border-slate-200 hover:bg-slate-50 font-black flex items-center justify-center gap-3"><span className="text-xl">G</span> Masuk dengan Google</button>
-   <button onClick={onGoogle} className="mt-3 w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black">Daftar dengan Google</button>
-   <p className="text-xs text-slate-400 mt-4 text-center">Untuk OAuth Google, tombol Masuk dan Daftar menggunakan flow yang sama; pengguna baru dibuat otomatis saat login pertama.</p>
-   {!authConfigured&&<div className="mt-5 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs leading-5"><b>Mode konfigurasi/demo.</b> Isi SUPABASE_URL dan SUPABASE_PUBLISHABLE_KEY di APP_CONFIG agar Google Login sungguhan aktif. Saat ini tombol akan masuk sebagai pengguna demo agar UI dapat diuji.</div>}
-   {message&&<div className="mt-4 p-3 rounded-xl bg-slate-100 text-sm">{message}</div>}
-  </div>
- </main>
-}
-
-function TopNav({view,setView,profile,authUser,onSignOut}){
- return <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur no-print">
-  <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-   <button onClick={()=>setView('dashboard')} className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-slate-900 text-white grid place-items-center font-black">N</div><div className="text-left"><div className="font-black leading-tight">UKOM Ners Pro <span className="text-indigo-600">AI</span></div><div className="text-[11px] text-slate-400 font-semibold">Preparation Platform · V2</div></div></button>
-   <div className="flex gap-2 items-center"><button onClick={()=>setView('history')} className="hidden sm:block px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-100">Riwayat</button><button onClick={()=>setView('profile')} title={authUser?.email||''} className="px-3 py-2 rounded-xl bg-slate-100 text-sm font-bold">{profile.name}</button><button onClick={onSignOut} className="px-3 py-2 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50">Keluar</button></div>
-  </div>
- </header>
-}
-
-function Dashboard({profile,attempts,avg,best,latest,aggregate,weakest,wrongCount,hasSession,onResume,onStart,socialStatus,authMessage,onYouTube,onTikTok,onStartWrong,setView}){
- const readinessNow=readiness(latest?.score||0);
- return <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-10 space-y-8">
-  <section className="rounded-[2rem] bg-slate-900 text-white p-7 md:p-10 relative overflow-hidden">
-   <div className="absolute -right-20 -top-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl"></div>
-   <div className="relative grid lg:grid-cols-[1.4fr,.8fr] gap-8 items-center">
-    <div><span className="inline-flex px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-indigo-200 mb-4">PERSONAL UKOM DASHBOARD</span><h1 className="text-3xl md:text-5xl font-black tracking-tight">Halo, {profile.name} 👋</h1><p className="text-slate-300 mt-3 max-w-2xl">Bukan sekadar melihat nilai. Gunakan data latihan untuk mengetahui area lemah dan menentukan latihan berikutnya.</p><div className="flex flex-wrap gap-3 mt-7"><button onClick={onStart} className="px-6 py-3.5 bg-indigo-500 hover:bg-indigo-400 rounded-xl font-black">Mulai Latihan / Tryout</button>{wrongCount>0&&<button onClick={onStartWrong} className="px-6 py-3.5 bg-white/10 hover:bg-white/15 rounded-xl font-bold">Ulangi {wrongCount} Soal Salah</button>}{hasSession&&<button onClick={onResume} className="px-6 py-3.5 bg-amber-400 text-slate-900 rounded-xl font-black">Lanjutkan Sesi</button>}</div></div>
-    <div className="bg-white/10 border border-white/10 rounded-3xl p-6"><div className="text-sm text-slate-300">Kesiapan berdasarkan tryout terakhir</div><div className="text-6xl font-black mt-2">{latest?latest.score:'–'}<span className="text-2xl">%</span></div><div className="mt-3 font-black">{latest?readinessNow.label:'Belum ada data'}</div><p className="text-xs text-slate-400 mt-3">Kategori ini adalah indikator internal platform, bukan penetapan kelulusan resmi UKOM.</p></div>
-   </div>
-  </section>
-
-  <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-   <Stat label="Tryout/latihan selesai" value={attempts.length} sub="attempt tersimpan" icon="✓"/>
-   <Stat label="Rata-rata skor" value={attempts.length?avg+'%':'–'} sub="seluruh attempt" icon="Ø"/>
-   <Stat label="Skor terbaik" value={attempts.length?best+'%':'–'} sub="personal best" icon="★"/>
-   <Stat label="Soal perlu diulang" value={wrongCount} sub="bank soal salah" icon="↻"/>
-  </section>
-
-  <section className="grid lg:grid-cols-[1.3fr,.7fr] gap-6">
-   <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm"><div className="flex justify-between items-end gap-4 mb-6"><div><h2 className="text-xl font-black">Peta Kompetensi</h2><p className="text-sm text-slate-500 mt-1">Agregasi maksimal 10 attempt terakhir.</p></div>{weakest&&<span className="text-xs font-black bg-rose-50 text-rose-600 px-3 py-2 rounded-xl">Fokus: {weakest}</span>}</div><div className="space-y-4">{AREAS.map(area=>{const v=aggregate[area]||{correct:0,total:0};const p=v.total?Math.round(100*v.correct/v.total):0;return <div key={area}><div className="flex justify-between text-sm font-bold mb-1.5"><span>{area}</span><span className="text-slate-500">{v.total?p+'%':'Belum ada data'}</span></div><div className="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${p>=75?'bg-emerald-500':p>=60?'bg-amber-400':'bg-rose-500'}`} style={{width:`${p}%`}}></div></div></div>})}</div></div>
-   <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm"><h2 className="text-xl font-black">Rekomendasi Hari Ini</h2>{weakest?<><div className="mt-6 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl"><div className="text-xs font-black text-indigo-500 uppercase">Area prioritas</div><div className="text-2xl font-black mt-1">{weakest}</div><p className="text-sm text-slate-600 mt-2">Kerjakan 20 soal terarah lalu ulangi soal yang salah.</p></div><button onClick={()=>{setView('setup')}} className="mt-4 w-full py-3.5 rounded-xl bg-slate-900 text-white font-black">Atur Latihan</button></>:<p className="text-slate-500 mt-4">Selesaikan satu tryout untuk mendapatkan rekomendasi personal.</p>}<div className="border-t mt-6 pt-6"><button onClick={()=>setView('history')} className="w-full text-left font-bold text-indigo-600">Lihat riwayat perkembangan →</button></div></div>
-  </section>
-
-  <section className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm">
-   <div className="flex flex-col md:flex-row md:items-center justify-between gap-5"><div><h2 className="text-xl font-black">Dukung Kanal Edukasi</h2><p className="text-sm text-slate-500 mt-1">Aksi sosial dibuat eksplisit agar pengguna mengetahui apa yang dilakukan akun mereka.</p></div><div className="flex flex-col sm:flex-row gap-3"><button onClick={onYouTube} className={`px-5 py-3 rounded-xl font-black ${socialStatus.youtube?'bg-emerald-100 text-emerald-700':'bg-red-600 text-white'}`}>{socialStatus.youtube?'✓ Sudah Subscribe YouTube':'Subscribe YouTube'}</button><button onClick={onTikTok} className={`px-5 py-3 rounded-xl font-black ${socialStatus.tiktok?'bg-slate-200 text-slate-700':'bg-slate-950 text-white'}`}>{socialStatus.tiktok?'TikTok Dibuka ✓':'Follow TikTok'}</button></div></div>
-   {authMessage&&<div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600">{authMessage}</div>}
-  </section>
- </main>
-}
-function Stat({label,value,sub,icon}){return <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><div className="w-10 h-10 rounded-xl bg-slate-100 grid place-items-center font-black">{icon}</div><div className="text-3xl font-black mt-4">{value}</div><div className="font-bold mt-1">{label}</div><div className="text-xs text-slate-400 mt-1">{sub}</div></div>}
-
-function Setup({setup,setSetup,wrongCount,onStart,onBack}){
- return <main className="max-w-4xl mx-auto px-4 py-10"><button onClick={onBack} className="mb-5 font-bold text-slate-500">← Dashboard</button><div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-9 shadow-sm"><h1 className="text-3xl font-black">Pilih Mode Belajar</h1><p className="text-slate-500 mt-2">Pisahkan latihan untuk belajar dan simulasi untuk asesmen.</p>
-  <div className="grid md:grid-cols-3 gap-4 mt-8">{[
-   ['tryout','Simulasi Tryout','Timer 1 menit/soal, pembahasan muncul setelah selesai.','⏱'],
-   ['learn','Mode Belajar','Pembahasan lengkap muncul setelah latihan selesai.','📚'],
-   ['wrong','Soal Salah Saya',`${wrongCount} soal tersimpan untuk remediasi personal.`,'↻']
-  ].map(([id,title,desc,ico])=><button key={id} disabled={id==='wrong'&&!wrongCount} onClick={()=>setSetup({...setup,mode:id,area:id==='wrong'?'Semua':setup.area})} className={`text-left p-5 rounded-2xl border-2 ${setup.mode===id?'border-indigo-500 bg-indigo-50':'border-slate-200'} disabled:opacity-40`}><div className="text-2xl">{ico}</div><div className="font-black mt-3">{title}</div><div className="text-sm text-slate-500 mt-1">{desc}</div></button>)}</div>
-  {setup.mode!=='wrong'&&<div className="grid md:grid-cols-2 gap-5 mt-8"><label className="block"><span className="text-sm font-black">Rumpun</span><select value={setup.area} onChange={e=>setSetup({...setup,area:e.target.value})} className="mt-2 w-full p-3.5 rounded-xl border border-slate-300 bg-white"><option>Semua</option>{AREAS.map(a=><option key={a}>{a}</option>)}</select></label>{setup.mode==='learn'&&<label className="block"><span className="text-sm font-black">Jumlah soal</span><select value={setup.count} onChange={e=>setSetup({...setup,count:+e.target.value})} className="mt-2 w-full p-3.5 rounded-xl border border-slate-300 bg-white">{[10,20,30,50].map(n=><option key={n} value={n}>{n} soal</option>)}</select></label>}</div>}
-  <label className="mt-6 flex items-center gap-3 p-4 bg-slate-50 rounded-xl"><input type="checkbox" checked={setup.randomize} onChange={e=>setSetup({...setup,randomize:e.target.checked})}/><div><div className="font-bold">Randomisasi soal & opsi jawaban</div><div className="text-xs text-slate-500">Mengurangi hafalan urutan dan membuat setiap attempt berbeda.</div></div></label>
-  <button onClick={onStart} className="mt-8 w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg">Mulai Sekarang →</button>
- </div></main>
-}
-
-function Exam({session,setSession,onFinish,favorites,setFavorites}){
- const q=session.questions[session.current]; const answered=session.answers[session.current]; const isFlagged=session.flagged.includes(session.current);
- // FIX V2.1: timer memakai functional update agar tick timer tidak menimpa jawaban/flag terbaru.
- useEffect(()=>{
-   if(session.mode!=='tryout'||session.timeLeft===null) return;
-   if(session.timeLeft<=0){onFinish();return;}
-   const t=setTimeout(()=>setSession(prev=>prev?{...prev,timeLeft:Math.max(0,(prev.timeLeft??0)-1)}:prev),1000);
-   return()=>clearTimeout(t);
- },[session.mode,session.timeLeft]);
- function answer(i){ setSession(prev=>prev?{...prev,answers:{...prev.answers,[prev.current]:i}}:prev); }
- function toggleFlag(){setSession(prev=>{if(!prev)return prev;const flagged=prev.flagged.includes(prev.current)?prev.flagged.filter(x=>x!==prev.current):[...prev.flagged,prev.current];return {...prev,flagged};})}
- function nav(i){setSession(prev=>prev?{...prev,current:Math.max(0,Math.min(prev.questions.length-1,i)),tutorOpen:null}:prev)}
- function toggleFav(){ const exists=favorites.includes(q.id); setFavorites(exists?favorites.filter(x=>x!==q.id):[...favorites,q.id]); }
- const answeredCount=Object.keys(session.answers).length;
- return <div className="h-screen bg-slate-100 flex flex-col lg:flex-row overflow-hidden">
-  <aside className="lg:w-80 bg-white border-r border-slate-200 flex flex-col max-h-[30vh] lg:max-h-none lg:h-screen no-print"><div className="p-5 bg-slate-900 text-white"><div className="font-black text-lg">UKOM NERS PRO AI</div><div className="text-xs text-slate-400 mt-1">{session.mode==='tryout'?'SIMULASI TRYOUT':session.mode==='wrong'?'REMEDIASI':'MODE BELAJAR'} · {answeredCount}/{session.questions.length}</div></div><div className="p-4 overflow-y-auto scrollbar flex-1"><div className="grid grid-cols-8 lg:grid-cols-5 gap-2">{session.questions.map((_,i)=>{const done=session.answers[i]!==undefined,flag=session.flagged.includes(i),active=i===session.current;return <button key={i} onClick={()=>nav(i)} className={`h-10 rounded-lg text-xs font-black border-2 relative ${active?'ring-2 ring-indigo-300 border-indigo-600':done?'bg-emerald-500 border-emerald-500 text-white':'bg-white border-slate-200 text-slate-500'}`}>{i+1}{flag&&<span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full"></span>}</button>})}</div></div><div className="p-4 border-t text-xs text-slate-500"><div className="flex gap-4"><span>🟢 Terjawab</span><span>🟡 Ragu</span></div></div></aside>
-  <main className="flex-1 flex flex-col min-h-0"><div className="bg-white border-b border-slate-200 px-4 md:px-8 py-3 flex items-center justify-between gap-4 no-print"><div><div className="font-black">Soal {session.current+1} <span className="ml-2 px-2 py-1 rounded-md bg-slate-100 text-xs">{q.rumpun}</span></div><div className="text-xs text-slate-400">ID #{q.id} · Bank soal Supabase aman</div></div><div className="flex items-center gap-2">{session.mode==='tryout'&&<div className={`px-4 py-2 rounded-xl font-mono font-black ${session.timeLeft<600?'bg-rose-50 text-rose-600':'bg-slate-100'}`}>{fmtTime(session.timeLeft)}</div>}<button onClick={toggleFlag} className={`px-3 py-2 rounded-xl font-bold ${isFlagged?'bg-amber-100 text-amber-700':'bg-slate-100'}`}>⚑ {isFlagged?'Ragu':'Tandai'}</button><button onClick={()=>{ if(confirm('Akhiri sesi dan lihat hasil?')) onFinish(); }} className="px-4 py-2 bg-rose-500 text-white rounded-xl font-black">Selesai</button></div></div>
-   <div className="flex-1 overflow-y-auto scrollbar p-4 md:p-8"><div className="max-w-4xl mx-auto"><div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm"><p className="text-lg md:text-xl font-semibold leading-relaxed">{q.text}</p></div><div className="space-y-3 mt-5">{q.options.map((opt,i)=>{const selected=answered===i; return <button key={i} onClick={()=>answer(i)} className={`w-full text-left p-4 md:p-5 rounded-2xl border-2 flex gap-4 transition ${selected?'bg-indigo-50 border-indigo-500':'bg-white border-slate-200 hover:border-indigo-300'}`}><span className={`w-9 h-9 shrink-0 rounded-xl grid place-items-center font-black ${selected?'bg-indigo-600 text-white':'bg-slate-100'}`}>{LETTERS[i]}</span><span className="font-semibold pt-1.5">{opt}</span></button>})}</div>
-</div></div>
-   <div className="bg-white border-t px-4 md:px-8 py-4 flex justify-between items-center no-print"><button onClick={()=>nav(session.current-1)} disabled={session.current===0} className="px-5 py-3 rounded-xl bg-slate-100 font-bold disabled:opacity-40">← Sebelumnya</button><div className="hidden md:flex gap-2"><button onClick={toggleFav} className="px-4 py-3 rounded-xl bg-slate-100 font-bold">{favorites.includes(q.id)?'★ Tersimpan':'☆ Simpan Soal'}</button></div><button onClick={()=>nav(session.current+1)} disabled={session.current===session.questions.length-1} className="px-5 py-3 rounded-xl bg-indigo-600 text-white font-black disabled:opacity-40">Selanjutnya →</button></div>
-  </main>
- </div>
-}
-function Result({attempt,onDashboard,onWeak}){
- const r=readiness(attempt.score); const rows=Object.entries(attempt.byArea).map(([area,v])=>({...v,area,pct:Math.round(100*v.correct/v.total)})).sort((a,b)=>a.pct-b.pct); const weakest=rows[0]?.area;
- return <main className="max-w-6xl mx-auto px-4 md:px-8 py-10"><div className="bg-slate-900 text-white rounded-[2rem] p-7 md:p-10"><div className="flex flex-col md:flex-row justify-between gap-8"><div><div className="text-sm text-indigo-300 font-black">HASIL ATTEMPT</div><div className="text-7xl font-black mt-2">{attempt.score}<span className="text-3xl">%</span></div><div className="font-black text-xl mt-3">{r.label}</div><p className="text-slate-300 mt-2 max-w-xl">{r.message}</p></div><div className="grid grid-cols-3 gap-3 md:w-[420px]"><Mini label="Benar" value={attempt.correct}/><Mini label="Salah" value={attempt.answered-attempt.correct}/><Mini label="Kosong" value={attempt.total-attempt.answered}/></div></div><div className="mt-7 text-xs text-slate-400 border-t border-white/10 pt-5">Skor/kategori pada aplikasi ini adalah evaluasi internal dan bukan keputusan kelulusan resmi UKOM Nasional.</div></div>
-  <div className="grid lg:grid-cols-[.9fr,1.1fr] gap-6 mt-6"><div className="bg-white border border-slate-200 rounded-3xl p-6"><h2 className="text-xl font-black">Analisis Kelemahan</h2><div className="space-y-4 mt-5">{rows.map(x=><div key={x.area}><div className="flex justify-between text-sm font-bold"><span>{x.area}</span><span>{x.correct}/{x.total} · {x.pct}%</span></div><div className="h-2.5 bg-slate-100 rounded-full mt-2 overflow-hidden"><div className={`h-full ${x.pct>=75?'bg-emerald-500':x.pct>=60?'bg-amber-400':'bg-rose-500'}`} style={{width:x.pct+'%'}}></div></div></div>)}</div>{weakest&&<button onClick={()=>onWeak(weakest)} className="mt-6 w-full py-3 rounded-xl bg-indigo-600 text-white font-black">Latih 20 Soal {weakest}</button>}</div><div className="bg-white border border-slate-200 rounded-3xl p-6"><h2 className="text-xl font-black">Review Soal</h2><p className="text-sm text-slate-500 mt-1">Pembahasan lengkap ditampilkan setelah attempt selesai.</p><div className="mt-5 max-h-[600px] overflow-y-auto scrollbar space-y-5">{attempt.questions.map((q,i)=>{const a=attempt.answers[i],ok=a===q.correctAnswer;return <details key={i} className="border border-slate-200 rounded-2xl overflow-hidden"><summary className="cursor-pointer p-4 font-bold flex justify-between"><span>Soal {i+1} · {q.rumpun}</span><span className={ok?'text-emerald-600':'text-rose-600'}>{ok?'BENAR':a===undefined?'KOSONG':'SALAH'}</span></summary><div className="p-4 pt-0"><p className="font-semibold">{q.text}</p><div className="mt-3 text-sm">Jawaban Anda: <b>{a===undefined?'–':LETTERS[a]+'. '+q.options[a]}</b></div><div className="text-sm">Kunci: <b>{LETTERS[q.correctAnswer]}. {q.options[q.correctAnswer]}</b></div><div className="mt-4 whitespace-pre-line text-sm leading-6 bg-indigo-50 p-4 rounded-xl">{q.explanation}</div></div></details>})}</div></div></div>
-  <div className="flex flex-wrap justify-center gap-3 mt-8 no-print"><button onClick={onDashboard} className="px-6 py-3 rounded-xl bg-slate-900 text-white font-black">Kembali ke Dashboard</button><button onClick={()=>window.print()} className="px-6 py-3 rounded-xl bg-white border border-slate-300 font-bold">Cetak / Simpan PDF</button></div>
- </main>
-}
-function Mini({label,value}){return <div className="bg-white/10 rounded-2xl p-4 text-center"><div className="text-3xl font-black">{value}</div><div className="text-xs text-slate-300 mt-1">{label}</div></div>}
-
-function History({attempts,setAttempts,onClearCloud,cloud,onBack}){return <main className="max-w-5xl mx-auto px-4 py-10"><button onClick={onBack} className="font-bold text-slate-500">← Dashboard</button><div className="flex justify-between items-end mt-5"><div><h1 className="text-3xl font-black">Riwayat Perkembangan</h1><p className="text-slate-500 mt-1">{cloud?'Riwayat disinkronkan dengan Supabase dan dapat dibuka dari perangkat lain.':'Mode lokal: riwayat tersimpan pada browser.'}</p></div>{attempts.length>0&&<button onClick={()=>cloud?onClearCloud():setAttempts([])} className="text-sm text-rose-600 font-bold">Hapus riwayat</button>}</div><div className="mt-6 space-y-3">{attempts.length===0?<div className="bg-white rounded-2xl border p-8 text-center text-slate-500">Belum ada riwayat.</div>:attempts.map((a,i)=><div key={a.id||i} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between gap-4"><div><div className="font-black">{a.mode==='tryout'?'Simulasi Tryout':a.mode==='wrong'?'Remediasi':'Mode Belajar'}</div><div className="text-xs text-slate-400 mt-1">{new Date(a.createdAt).toLocaleString('id-ID')} · {a.correct}/{a.total} benar</div></div><div className="text-3xl font-black">{a.score}%</div></div>)}</div></main>}
-function Profile({profile,setProfile,onBack}){return <main className="max-w-2xl mx-auto px-4 py-10"><button onClick={onBack} className="font-bold text-slate-500">← Dashboard</button><div className="bg-white border border-slate-200 rounded-3xl p-7 mt-5"><h1 className="text-2xl font-black">Profil Mahasiswa</h1><p className="text-sm text-slate-500 mt-1">Identitas login dikelola oleh Supabase Auth; institusi/target dapat disimpan sebagai preferensi tampilan.</p><div className="space-y-5 mt-6"><label className="block"><span className="font-bold text-sm">Nama</span><input value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})} className="mt-2 w-full p-3.5 rounded-xl border border-slate-300"/></label><label className="block"><span className="font-bold text-sm">Institusi</span><input value={profile.institution} onChange={e=>setProfile({...profile,institution:e.target.value})} placeholder="Nama kampus" className="mt-2 w-full p-3.5 rounded-xl border border-slate-300"/></label><label className="block"><span className="font-bold text-sm">Target</span><input value={profile.target} onChange={e=>setProfile({...profile,target:e.target.value})} className="mt-2 w-full p-3.5 rounded-xl border border-slate-300"/></label></div><button onClick={onBack} className="mt-7 w-full py-3.5 rounded-xl bg-slate-900 text-white font-black">Simpan</button></div></main>}
+function Splash({text='Memuat UKOM Nursing Pro AI…'}){return <div className="min-h-screen grid place-items-center bg-slate-950 text-white"><div className="text-center"><div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 grid place-items-center font-black text-2xl mx-auto shadow-glow">N+</div><div className="font-black mt-4">{text}</div></div></div>}
+function Marketing({onLogin}){return <div className="bg-slate-950 text-white min-h-screen"><nav className="fixed top-0 inset-x-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl"><div className="max-w-7xl mx-auto h-16 px-4 md:px-8 flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 grid place-items-center font-black">N+</div><div className="font-black">UKOM Nursing Pro <span className="text-cyan-300">AI</span></div></div><div className="hidden md:flex gap-7 text-sm text-slate-300"><a href="#fitur">Fitur</a><a href="#program">Program</a><a href="#harga">Harga</a></div><button onClick={onLogin} className="px-4 py-2.5 rounded-xl bg-white text-slate-950 font-black">Masuk / Daftar</button></div></nav>
+<section className="hero-grid pt-28 pb-20 overflow-hidden"><div className="max-w-7xl mx-auto px-4 md:px-8 grid lg:grid-cols-2 gap-14 items-center"><div><div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-200 text-xs font-black">PROFESI NERS • D3 KEPERAWATAN</div><h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02] mt-6">Jangan masuk UKOM tanpa tahu <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-300">kelemahanmu.</span></h1><p className="text-lg text-slate-300 mt-6 max-w-2xl">Simulasi berbasis vignette, analisis kompetensi, pembahasan lengkap A–E, dan latihan personal untuk calon Ners dan D3 Keperawatan.</p><div className="flex flex-wrap gap-3 mt-8"><button onClick={onLogin} className="px-6 py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 font-black shadow-glow">Coba 20 Soal Gratis</button><a href="#fitur" className="px-6 py-4 rounded-2xl border border-white/15 bg-white/5 font-bold">Lihat Fitur →</a></div><div className="flex flex-wrap gap-5 mt-8 text-sm text-slate-400"><span>✓ 180 soal per program</span><span>✓ Server-side scoring</span><span>✓ Pembahasan A–E</span></div></div><div className="orb-wrap relative min-h-[430px] grid place-items-center"><div className="orb"></div><div className="float-card a"><div className="text-[10px] text-cyan-200 font-black">KMB</div><div className="text-xl font-black">82%</div></div><div className="float-card b"><div className="text-[10px] text-rose-200 font-black">AREA PRIORITAS</div><div className="font-black">Jiwa · 48%</div></div><div className="float-card c"><div className="text-[10px] text-indigo-200 font-black">SIMULASI</div><div className="font-black">180 soal · 180 menit</div></div></div></div></section>
+<section id="program" className="py-20 bg-white text-slate-900"><div className="max-w-6xl mx-auto px-4 md:px-8"><div className="text-center"><div className="text-xs font-black text-indigo-600">PILIH PROGRAMMU</div><h2 className="text-3xl md:text-5xl font-black mt-3">Satu platform, dua jalur UKOM.</h2></div><div className="grid md:grid-cols-2 gap-6 mt-10"><ProgramCard icon="🩺" title="Profesi Ners" desc="Simulasi dan analitik khusus calon Ners."/><ProgramCard icon="🏥" title="D3 Keperawatan" desc="180 vignette dengan fokus implementasi dan procedural knowledge."/></div></div></section>
+<section id="fitur" className="py-20 bg-slate-50 text-slate-900"><div className="max-w-7xl mx-auto px-4 md:px-8"><div className="grid md:grid-cols-3 gap-5"><Feature title="Simulasi Realistis" text="180 soal, timer, randomisasi opsi, tanda ragu, dan review setelah submit."/><Feature title="Analisis Kompetensi" text="Lihat performa per area dan temukan fokus belajar berikutnya."/><Feature title="Pembahasan A–E" text="Bukan cuma kunci. Pelajari alasan jawaban benar dan alasan setiap distraktor tidak tepat."/></div></div></section>
+<section id="harga" className="py-20 bg-slate-950"><div className="max-w-5xl mx-auto px-4 md:px-8 text-center"><div className="text-xs font-black text-cyan-300">PROMO LAUNCHING</div><h2 className="text-4xl md:text-5xl font-black mt-3">Belajar 30 hari. Bayar sekali.</h2><div className="mt-8 inline-block p-8 rounded-[2rem] border border-white/10 bg-white/5 min-w-[320px]"><div className="text-slate-400 line-through text-xl">{money(APP_CONFIG.NORMAL_PRICE)}</div><div className="text-6xl font-black mt-1">{money(APP_CONFIG.PROMO_PRICE)}</div><div className="text-slate-300 mt-2">/ program / 30 hari</div><button onClick={onLogin} className="mt-7 w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-cyan-500 font-black">Mulai dari Trial Gratis</button></div></div></section>
+<footer className="py-10 bg-slate-950 border-t border-white/10 text-center text-sm text-slate-500">UKOM Nursing Pro AI · Bank soal latihan independen, bukan soal resmi UKOM Nasional.</footer></div>}
+function ProgramCard({icon,title,desc}){return <div className="tilt rounded-3xl border border-slate-200 p-7 bg-gradient-to-br from-white to-indigo-50"><div className="text-4xl">{icon}</div><h3 className="text-2xl font-black mt-5">{title}</h3><p className="text-slate-500 mt-2">{desc}</p></div>}
+function Feature({title,text}){return <div className="tilt rounded-3xl bg-white border border-slate-200 p-7"><div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 grid place-items-center font-black">✦</div><h3 className="text-xl font-black mt-5">{title}</h3><p className="text-slate-500 mt-2 leading-6">{text}</p></div>}
+function Onboarding({initial,user,onSave}){const [f,setF]=useState({full_name:initial.full_name||user.user_metadata?.full_name||user.user_metadata?.name||'',institution:initial.institution||'',program:initial.program||'',target_ukom:initial.target_ukom||'2026',phone:initial.phone||''}),[busy,setBusy]=useState(false),[err,setErr]=useState('');async function submit(){setBusy(true);setErr('');try{await onSave(f)}catch(e){setErr(e.message)}finally{setBusy(false)}}return <main className="min-h-screen bg-slate-950 text-white grid place-items-center p-4"><div className="w-full max-w-2xl bg-white text-slate-900 rounded-[2rem] p-7 md:p-10 shadow-2xl"><div className="text-xs font-black text-indigo-600">SELAMAT DATANG</div><h1 className="text-3xl font-black mt-2">Lengkapi profil UKOM-mu</h1><p className="text-slate-500 mt-2">Data ini digunakan untuk menyesuaikan bank soal dan analitik.</p><div className="grid md:grid-cols-2 gap-5 mt-7"><Field label="Nama lengkap" value={f.full_name} onChange={v=>setF({...f,full_name:v})}/><Field label="Institusi" value={f.institution} onChange={v=>setF({...f,institution:v})} placeholder="Universitas / Poltekkes / STIKes"/><label className="block md:col-span-2"><span className="text-sm font-black">Program Studi</span><div className="grid md:grid-cols-2 gap-3 mt-2">{[['ners','Profesi Ners','🩺'],['d3','D3 Keperawatan','🏥']].map(([id,t,ico])=><button key={id} type="button" onClick={()=>setF({...f,program:id})} className={`text-left p-4 rounded-2xl border-2 ${f.program===id?'border-indigo-500 bg-indigo-50':'border-slate-200'}`}><span className="text-2xl">{ico}</span><div className="font-black mt-2">{t}</div></button>)}</div></label><Field label="Target UKOM" value={f.target_ukom} onChange={v=>setF({...f,target_ukom:v})}/><Field label="WhatsApp (opsional)" value={f.phone} onChange={v=>setF({...f,phone:v})}/></div>{err&&<div className="mt-4 p-3 rounded-xl bg-rose-50 text-rose-700 text-sm">{err}</div>}<button disabled={busy||!f.full_name||!f.institution||!f.program} onClick={submit} className="mt-7 w-full py-4 rounded-2xl bg-slate-900 text-white font-black disabled:opacity-40">{busy?'Menyimpan…':'Masuk ke Dashboard'}</button></div></main>}
+function Field({label,value,onChange,placeholder}){return <label className="block"><span className="text-sm font-black">{label}</span><input value={value||''} onChange={e=>onChange(e.target.value)} placeholder={placeholder||''} className="mt-2 w-full p-3.5 rounded-xl border border-slate-300 outline-none focus:ring-2 ring-indigo-200"/></label>}
+function TopNav({profile,access,setView,onSignOut}){return <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200 no-print"><div className="max-w-7xl mx-auto h-16 px-4 md:px-8 flex items-center justify-between"><button onClick={()=>setView('dashboard')} className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white grid place-items-center font-black">N+</div><div className="text-left"><div className="font-black">UKOM Nursing Pro <span className="text-indigo-600">AI</span></div><div className="text-[11px] text-slate-400 font-bold">{programLabel(profile.program)}</div></div></button><div className="flex items-center gap-2"><span className={`hidden md:inline-flex px-3 py-1 rounded-full text-xs font-black ${access?.premium?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}`}>{access?.premium?'PRO AKTIF':'FREE'}</span><button onClick={()=>setView('history')} className="hidden sm:block px-3 py-2 rounded-xl font-bold hover:bg-slate-100">Riwayat</button><button onClick={()=>setView('profile')} className="px-3 py-2 rounded-xl bg-slate-100 font-bold">{profile.full_name.split(' ')[0]}</button><button onClick={onSignOut} className="px-3 py-2 rounded-xl text-rose-600 font-bold">Keluar</button></div></div></header>}
+function Dashboard({profile,access,attempts,latest,avg,best,aggregate,weakest,wrongCount,message,onTrial,onPremium,onWrong,onPricing,onRefresh,setView}){const r=readiness(latest?.score||0);return <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-7"><section className="rounded-[2rem] bg-slate-950 text-white p-7 md:p-10 relative overflow-hidden"><div className="absolute right-0 top-0 w-80 h-80 bg-indigo-500/20 blur-3xl rounded-full"></div><div className="relative grid lg:grid-cols-[1.3fr,.7fr] gap-8 items-center"><div><div className="flex flex-wrap gap-2"><span className="px-3 py-1 rounded-full bg-white/10 text-xs font-black">{programLabel(profile.program)}</span><span className={`px-3 py-1 rounded-full text-xs font-black ${access?.premium?'bg-emerald-400/20 text-emerald-200':'bg-amber-400/20 text-amber-200'}`}>{access?.premium?'Premium aktif':'Free account'}</span></div><h1 className="text-3xl md:text-5xl font-black mt-5">Halo, {profile.full_name.split(' ')[0]} 👋</h1><p className="text-slate-300 mt-3">Latihan, ukur kelemahan, lalu fokuskan belajar pada area yang paling membutuhkan penguatan.</p><div className="flex flex-wrap gap-3 mt-7">{!access?.trial_used&&<button onClick={onTrial} className="px-6 py-3.5 rounded-xl bg-cyan-400 text-slate-950 font-black">Coba 20 Soal Gratis</button>}<button onClick={access?.premium?onPremium:onPricing} className="px-6 py-3.5 rounded-xl bg-indigo-500 font-black">{access?.premium?'Mulai Latihan / Tryout':'🔒 Buka Premium'}</button>{access?.premium&&wrongCount>0&&<button onClick={onWrong} className="px-6 py-3.5 rounded-xl bg-white/10 font-bold">Ulangi {wrongCount} Soal Salah</button>}</div></div><div className="bg-white/10 border border-white/10 rounded-3xl p-6"><div className="text-sm text-slate-300">Kesiapan tryout terakhir</div><div className="text-6xl font-black mt-2">{latest?latest.score:'–'}<span className="text-2xl">%</span></div><div className="font-black mt-2">{latest?r.label:'Belum ada data'}</div><div className="text-xs text-slate-400 mt-3">Indikator internal platform, bukan keputusan kelulusan resmi.</div></div></div></section>
+<section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"><Stat label="Attempt selesai" value={attempts.length}/><Stat label="Rata-rata" value={attempts.length?avg+'%':'–'}/><Stat label="Skor terbaik" value={attempts.length?best+'%':'–'}/><Stat label="Soal perlu diulang" value={wrongCount}/></section>
+{!access?.premium&&<section className="rounded-3xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-5"><div><div className="text-xs font-black text-indigo-100">PROMO LAUNCHING</div><div className="text-2xl font-black mt-1"><span className="line-through opacity-70 mr-2">{money(APP_CONFIG.NORMAL_PRICE)}</span>{money(APP_CONFIG.PROMO_PRICE)}</div><div className="text-sm text-white/80 mt-1">Akses 30 hari untuk {programLabel(profile.program)}.</div></div><button onClick={onPricing} className="px-6 py-3.5 rounded-xl bg-white text-slate-950 font-black">Aktifkan Premium</button></section>}
+<section className="grid lg:grid-cols-[1.25fr,.75fr] gap-6"><div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8"><div className="flex justify-between"><div><h2 className="text-xl font-black">Peta Kompetensi</h2><p className="text-sm text-slate-500">Agregasi 10 attempt terakhir.</p></div>{weakest&&<span className="text-xs bg-rose-50 text-rose-600 font-black px-3 py-2 rounded-xl h-fit">Fokus: {weakest}</span>}</div><div className="space-y-4 mt-6">{AREAS.map(a=>{const v=aggregate[a]||{correct:0,total:0};if(!v.total)return null;const p=Math.round(100*v.correct/v.total);return <div key={a}><div className="flex justify-between text-sm font-bold"><span>{a}</span><span>{p}%</span></div><div className="h-2.5 bg-slate-100 rounded-full mt-2 overflow-hidden"><div className={`${p>=75?'bg-emerald-500':p>=60?'bg-amber-400':'bg-rose-500'} h-full`} style={{width:p+'%'}}></div></div></div>})}</div></div><div className="bg-white border border-slate-200 rounded-3xl p-6"><h2 className="text-xl font-black">Akun & Akses</h2><div className="mt-5 p-4 rounded-2xl bg-slate-50"><div className="text-xs font-black text-slate-400">INSTITUSI</div><div className="font-black mt-1">{profile.institution}</div></div><div className="mt-3 p-4 rounded-2xl bg-slate-50"><div className="text-xs font-black text-slate-400">TRIAL</div><div className="font-black mt-1">{access?.trial_used?'Sudah digunakan':'20 soal tersedia'}</div></div><button onClick={onRefresh} className="mt-4 w-full py-3 rounded-xl bg-slate-900 text-white font-black">Cek Status Akses</button></div></section>{message&&<div className="p-4 rounded-2xl bg-slate-100 text-sm text-slate-600">{message}</div>}</main>}
+function Stat({label,value}){return <div className="bg-white rounded-2xl border border-slate-200 p-5"><div className="text-3xl font-black">{value}</div><div className="font-bold mt-1">{label}</div></div>}
+function Setup({setup,setSetup,premium,wrongCount,onStart,onBack,onPricing}){if(!premium)return <main className="max-w-3xl mx-auto px-4 py-12"><button onClick={onBack} className="font-bold text-slate-500">← Dashboard</button><div className="mt-6 bg-white rounded-3xl border p-8 text-center"><div className="text-4xl">🔒</div><h1 className="text-3xl font-black mt-4">Fitur Premium</h1><p className="text-slate-500 mt-2">Aktifkan paket untuk latihan per area dan simulasi 180 soal.</p><button onClick={onPricing} className="mt-6 px-6 py-3.5 rounded-xl bg-indigo-600 text-white font-black">Lihat Promo</button></div></main>;return <main className="max-w-4xl mx-auto px-4 py-10"><button onClick={onBack} className="font-bold text-slate-500">← Dashboard</button><div className="bg-white border rounded-[2rem] p-7 md:p-9 mt-5"><h1 className="text-3xl font-black">Pilih Mode</h1><div className="grid md:grid-cols-3 gap-4 mt-7">{[['tryout','Simulasi 180','180 soal · 180 menit'],['learn','Latihan Terarah','10–50 soal per area'],['wrong','Soal Salah Saya',`${wrongCount} soal untuk remediasi`]].map(([id,t,d])=><button key={id} disabled={id==='wrong'&&!wrongCount} onClick={()=>setSetup({...setup,mode:id,area:id==='wrong'?'Semua':setup.area})} className={`p-5 rounded-2xl border-2 text-left ${setup.mode===id?'border-indigo-500 bg-indigo-50':'border-slate-200'} disabled:opacity-40`}><div className="font-black">{t}</div><div className="text-sm text-slate-500 mt-1">{d}</div></button>)}</div>{setup.mode!=='wrong'&&<div className="grid md:grid-cols-2 gap-5 mt-7"><label><span className="text-sm font-black">Area</span><select value={setup.area} onChange={e=>setSetup({...setup,area:e.target.value})} className="mt-2 w-full p-3.5 border rounded-xl bg-white"><option>Semua</option>{AREAS.map(a=><option key={a}>{a}</option>)}</select></label>{setup.mode==='learn'&&<label><span className="text-sm font-black">Jumlah</span><select value={setup.count} onChange={e=>setSetup({...setup,count:+e.target.value})} className="mt-2 w-full p-3.5 border rounded-xl bg-white">{[10,20,30,50].map(n=><option key={n} value={n}>{n} soal</option>)}</select></label>}</div>}<label className="mt-5 flex gap-3 p-4 rounded-xl bg-slate-50"><input type="checkbox" checked={setup.randomize} onChange={e=>setSetup({...setup,randomize:e.target.checked})}/><span className="font-bold">Randomisasi pilihan jawaban</span></label><button onClick={onStart} className="mt-7 w-full py-4 rounded-xl bg-indigo-600 text-white font-black">Mulai</button></div></main>}
+function Exam({session,setSession,onFinish,favorites,setFavorites}){const q=session.questions[session.current],answered=session.answers[session.current],flag=session.flagged.includes(session.current);useEffect(()=>{if(session.mode!=='tryout'||session.timeLeft===null)return;const id=setInterval(()=>setSession(prev=>({...prev,timeLeft:Math.max(0,(prev.timeLeft||0)-1)})),1000);return()=>clearInterval(id)},[session.mode]);useEffect(()=>{if(session.mode==='tryout'&&session.timeLeft===0)onFinish()},[session.timeLeft]);function answer(i){setSession(p=>({...p,answers:{...p.answers,[p.current]:i}}))}function nav(i){if(i>=0&&i<session.questions.length)setSession(s=>({...s,current:i}))}function toggleFlag(){setSession(s=>({...s,flagged:s.flagged.includes(s.current)?s.flagged.filter(x=>x!==s.current):[...s.flagged,s.current]}))}function toggleFav(){setFavorites(x=>x.includes(q.id)?x.filter(id=>id!==q.id):[...x,q.id])}const done=Object.keys(session.answers).length;return <div className="h-screen bg-slate-100 lg:flex overflow-hidden"><aside className="lg:w-80 bg-white border-r flex flex-col max-h-[30vh] lg:max-h-none lg:h-screen no-print"><div className="p-5 bg-slate-950 text-white"><div className="font-black">UKOM NURSING PRO AI</div><div className="text-xs text-slate-400 mt-1">{session.mode.toUpperCase()} · {done}/{session.questions.length}</div></div><div className="p-4 overflow-y-auto scrollbar flex-1"><div className="grid grid-cols-8 lg:grid-cols-5 gap-2">{session.questions.map((_,i)=>{const a=session.answers[i]!==undefined,f=session.flagged.includes(i),active=i===session.current;return <button key={i} onClick={()=>setSession(s=>({...s,current:i}))} className={`h-10 rounded-lg text-xs font-black border-2 relative ${active?'ring-2 ring-indigo-300 border-indigo-600':a?'bg-emerald-500 border-emerald-500 text-white':'bg-white border-slate-200'}`}>{i+1}{f&&<span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full"/>}</button>})}</div></div></aside><main className="flex-1 flex flex-col min-h-0"><div className="bg-white border-b px-4 md:px-8 py-3 flex items-center justify-between no-print"><div><div className="font-black">Soal {session.current+1} <span className="ml-2 px-2 py-1 rounded bg-slate-100 text-xs">{q.rumpun}</span></div><div className="text-xs text-slate-400">ID #{q.id}</div></div><div className="flex gap-2 items-center">{session.mode==='tryout'&&<div className="px-4 py-2 rounded-xl bg-slate-100 font-mono font-black">{fmtTime(session.timeLeft)}</div>}<button onClick={toggleFlag} className={`px-3 py-2 rounded-xl font-bold ${flag?'bg-amber-100 text-amber-700':'bg-slate-100'}`}>⚑ {flag?'Ragu':'Tandai'}</button><button onClick={()=>confirm('Akhiri sesi dan lihat hasil?')&&onFinish()} className="px-4 py-2 rounded-xl bg-rose-500 text-white font-black">Selesai</button></div></div><div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar"><div className="max-w-4xl mx-auto"><div className="bg-white border rounded-3xl p-6 md:p-8"><p className="text-lg md:text-xl font-semibold leading-relaxed">{q.text}</p></div><div className="space-y-3 mt-5">{q.options.map((o,i)=><button key={i} onClick={()=>answer(i)} className={`w-full text-left p-4 md:p-5 rounded-2xl border-2 flex gap-4 ${answered===i?'border-indigo-500 bg-indigo-50':'border-slate-200 bg-white'}`}><span className={`w-9 h-9 rounded-xl grid place-items-center font-black shrink-0 ${answered===i?'bg-indigo-600 text-white':'bg-slate-100'}`}>{LETTERS[i]}</span><span className="font-semibold pt-1.5">{o}</span></button>)}</div></div></div><div className="bg-white border-t px-4 md:px-8 py-4 flex justify-between no-print"><button onClick={()=>setSession(s=>({...s,current:Math.max(0,s.current-1)}))} disabled={session.current===0} className="px-5 py-3 rounded-xl bg-slate-100 font-bold disabled:opacity-40">← Sebelumnya</button><button onClick={toggleFav} className="hidden md:block px-4 py-3 rounded-xl bg-slate-100 font-bold">{favorites.includes(q.id)?'★ Tersimpan':'☆ Simpan'}</button><button onClick={()=>setSession(s=>({...s,current:Math.min(s.questions.length-1,s.current+1)}))} disabled={session.current===session.questions.length-1} className="px-5 py-3 rounded-xl bg-indigo-600 text-white font-black disabled:opacity-40">Selanjutnya →</button></div></main></div>}
+function Result({attempt,onDashboard,onWeak}){const r=readiness(attempt.score),rows=Object.entries(attempt.byArea||{}).map(([area,v])=>({...v,area,pct:Math.round(100*v.correct/v.total)})).sort((a,b)=>a.pct-b.pct),weak=rows[0]?.area;return <main className="max-w-6xl mx-auto px-4 md:px-8 py-10"><div className="rounded-[2rem] bg-slate-950 text-white p-8"><div className="text-sm text-cyan-300 font-black">HASIL {programLabel(attempt.program)}</div><div className="text-7xl font-black mt-2">{attempt.score}<span className="text-3xl">%</span></div><div className="text-xl font-black mt-3">{r.label}</div><div className="grid grid-cols-3 gap-3 max-w-md mt-7"><Mini label="Benar" value={attempt.correct}/><Mini label="Salah" value={attempt.answered-attempt.correct}/><Mini label="Kosong" value={attempt.total-attempt.answered}/></div></div><div className="grid lg:grid-cols-[.8fr,1.2fr] gap-6 mt-6"><div className="bg-white border rounded-3xl p-6"><h2 className="text-xl font-black">Analisis Area</h2><div className="space-y-4 mt-5">{rows.map(x=><div key={x.area}><div className="flex justify-between text-sm font-bold"><span>{x.area}</span><span>{x.pct}%</span></div><div className="h-2.5 bg-slate-100 rounded-full mt-2"><div className={`${x.pct>=75?'bg-emerald-500':x.pct>=60?'bg-amber-400':'bg-rose-500'} h-full rounded-full`} style={{width:x.pct+'%'}}/></div></div>)}</div>{weak&&<button onClick={()=>onWeak(weak)} className="mt-6 w-full py-3 rounded-xl bg-indigo-600 text-white font-black">Latih 20 Soal {weak}</button>}</div><div className="bg-white border rounded-3xl p-6"><h2 className="text-xl font-black">Review & Rasional</h2><p className="text-sm text-slate-500">Kunci dan pembahasan baru diterima setelah attempt tersimpan.</p><div className="mt-5 max-h-[650px] overflow-y-auto scrollbar space-y-4">{attempt.questions.map((q,i)=>{const a=attempt.answers[i],ok=a===q.correctAnswer;return <details key={i} className="border rounded-2xl overflow-hidden"><summary className="p-4 cursor-pointer font-bold flex justify-between"><span>Soal {i+1} · {q.rumpun}</span><span className={ok?'text-emerald-600':'text-rose-600'}>{ok?'BENAR':a===undefined?'KOSONG':'SALAH'}</span></summary><div className="p-4 pt-0"><p className="font-semibold leading-6">{q.text}</p><div className="text-sm mt-3">Jawaban Anda: <b>{a===undefined?'–':LETTERS[a]+'. '+q.options[a]}</b></div><div className="text-sm">Kunci: <b>{LETTERS[q.correctAnswer]}. {q.options[q.correctAnswer]}</b></div><div className="mt-4 p-4 rounded-xl bg-indigo-50 text-sm leading-6 whitespace-pre-line">{q.explanation}</div></div></details>})}</div></div></div><button onClick={onDashboard} className="mt-8 px-6 py-3 rounded-xl bg-slate-900 text-white font-black no-print">Kembali ke Dashboard</button></main>}
+function Mini({label,value}){return <div className="rounded-2xl bg-white/10 p-4 text-center"><div className="text-3xl font-black">{value}</div><div className="text-xs text-slate-300">{label}</div></div>}
+function History({attempts,onBack}){return <main className="max-w-5xl mx-auto px-4 py-10"><button onClick={onBack} className="font-bold text-slate-500">← Dashboard</button><h1 className="text-3xl font-black mt-5">Riwayat Perkembangan</h1><div className="space-y-3 mt-6">{attempts.length?attempts.map(a=><div key={a.id} className="bg-white border rounded-2xl p-5 flex justify-between"><div><div className="font-black">{a.mode==='trial'?'Trial Gratis':a.mode==='tryout'?'Simulasi 180':'Latihan'}</div><div className="text-xs text-slate-400">{new Date(a.createdAt).toLocaleString('id-ID')} · {a.correct}/{a.total} benar</div></div><div className="text-3xl font-black">{a.score}%</div></div>):<div className="bg-white border rounded-2xl p-8 text-slate-500 text-center">Belum ada riwayat.</div>}</div></main>}
+function Profile({profile,onSave,onBack}){const [f,setF]=useState({...profile}),[busy,setBusy]=useState(false),[err,setErr]=useState('');async function submit(){setBusy(true);try{await onSave(f)}catch(e){setErr(e.message)}finally{setBusy(false)}}return <main className="max-w-2xl mx-auto px-4 py-10"><button onClick={onBack} className="font-bold text-slate-500">← Dashboard</button><div className="bg-white border rounded-3xl p-7 mt-5"><h1 className="text-2xl font-black">Profil Mahasiswa</h1><div className="space-y-5 mt-6"><Field label="Nama lengkap" value={f.full_name} onChange={v=>setF({...f,full_name:v})}/><Field label="Institusi" value={f.institution} onChange={v=>setF({...f,institution:v})}/><label className="block"><span className="text-sm font-black">Program</span><select value={f.program} onChange={e=>setF({...f,program:e.target.value})} className="mt-2 w-full p-3.5 border rounded-xl bg-white"><option value="ners">Profesi Ners</option><option value="d3">D3 Keperawatan</option></select><div className="text-xs text-amber-600 mt-2">Akses premium berlaku per program. Mengganti program akan mengubah bank soal dashboard.</div></label><Field label="Target UKOM" value={f.target_ukom||''} onChange={v=>setF({...f,target_ukom:v})}/></div>{err&&<div className="mt-4 text-rose-600 text-sm">{err}</div>}<button onClick={submit} disabled={busy} className="mt-7 w-full py-3.5 rounded-xl bg-slate-900 text-white font-black">{busy?'Menyimpan…':'Simpan Perubahan'}</button></div></main>}
+function Pricing({onClose,onCheckout,onRefresh,program,message}){return <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm grid place-items-center p-4"><div className="w-full max-w-lg bg-white rounded-[2rem] p-7 md:p-9 relative"><button onClick={onClose} className="absolute right-5 top-5 w-9 h-9 rounded-full bg-slate-100">×</button><div className="text-xs font-black text-indigo-600">PROMO LAUNCHING</div><h2 className="text-3xl font-black mt-2">Aktifkan {programLabel(program)}</h2><p className="text-slate-500 mt-2">Akses premium 30 hari: simulasi 180 soal, latihan per area, remediasi, pembahasan lengkap, dan analitik.</p><div className="mt-6 p-5 rounded-2xl bg-slate-950 text-white text-center"><div className="line-through text-slate-400">{money(APP_CONFIG.NORMAL_PRICE)}</div><div className="text-5xl font-black">{money(APP_CONFIG.PROMO_PRICE)}</div></div><div className="grid grid-cols-3 gap-2 mt-5 text-center text-xs font-bold"><div className="p-3 rounded-xl bg-slate-50">QRIS</div><div className="p-3 rounded-xl bg-slate-50">GoPay</div><div className="p-3 rounded-xl bg-slate-50">VA Bank</div></div><button onClick={onCheckout} className="mt-5 w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-black">Bayar & Aktifkan</button><button onClick={onRefresh} className="mt-3 w-full py-3 rounded-xl bg-slate-100 font-bold">Saya Sudah Bayar — Cek Status</button>{message&&<div className="mt-4 p-3 rounded-xl bg-slate-50 text-xs text-slate-600">{message}</div>}<p className="text-[11px] text-slate-400 mt-4">Pembayaran otomatis membutuhkan konfigurasi Midtrans Server Key pada Supabase Edge Function. Server Key tidak boleh disimpan di GitHub.</p></div></div>}
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
-</body>
-</html>
+</script></body></html>
