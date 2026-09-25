@@ -87,39 +87,181 @@ function fmtDateID(v){if(!v)return'';try{return new Intl.DateTimeFormat('id-ID',
 function readiness(s){if(s>=75)return{label:'Kesiapan Tinggi',tone:'emerald',message:'Pertahankan konsistensi dan fokuskan latihan pada area terlemah.'};if(s>=60)return{label:'Kesiapan Sedang',tone:'amber',message:'Dasar cukup, tetapi masih ada area yang perlu penguatan terarah.'};return{label:'Perlu Penguatan',tone:'rose',message:'Prioritaskan latihan per area dan ulangi soal yang masih salah.'}}
 function programLabel(p){return p==='d3'?'D3 Keperawatan':p==='bidan'?'Profesi Bidan':'Profesi Ners'}
 
+function remapExplanation(text,optionOrder){
+  if(!text||!Array.isArray(optionOrder)||optionOrder.length!==5)return text||'Pembahasan belum tersedia.';
+  const originalToDisplay={};
+  optionOrder.forEach((orig,display)=>{originalToDisplay[LETTERS[orig]]=LETTERS[display]});
+  const tokenMap={A:'§A§',B:'§B§',C:'§C§',D:'§D§',E:'§E§'};
+  let out=String(text);
+  for(const l of LETTERS){
+    out=out.replace(new RegExp('(^|\\n)'+l+'([\\.\\:)])','gm',(_,p1,p2)=>p1+tokenMap[l]+p2);
+    out=out.replace(new RegExp('(Kunci jawaban:\\s*)'+l+'([\\.\\:)])','gi',(_,p1,p2)=>p1+tokenMap[l]+p2);
+  }
+  for(const l of LETTERS)out=out.replaceAll(tokenMap[l],originalToDisplay[l]||l);
+  return out;
+}
+function sessionFromPayload(data,local){
+  if(!data)return null;
+  const questions=(data.questions||[]).map(row=>({
+    id:Number(row.id),rumpun:row.area,subtopic:row.subtopic||'',text:row.vignette,
+    options:row.options||[],optionMap:(row.option_order||[0,1,2,3,4]).map(Number),
+    difficulty:row.difficulty,cognitiveLevel:row.cognitive_level,blueprintTag:row.blueprint_tag
+  }));
+  const same=local&&local.sessionId===data.session_id;
+  return {
+    sessionId:data.session_id,program:data.program,mode:data.mode,area:data.area||'Semua',
+    questions,answers:same?(local.answers||{}):{},flagged:same?(local.flagged||[]):[],
+    current:same?Math.min(Number(local.current||0),Math.max(questions.length-1,0)):0,
+    startedAt:data.created_at,expiresAt:data.expires_at||null,serverNow:data.server_now||null
+  };
+}
+function attemptFromPayload(data){
+  const review=data?.review||[];
+  const questions=review.map(r=>({
+    id:Number(r.question_id),rumpun:r.area||'',subtopic:r.subtopic||'',text:r.vignette||'',
+    options:r.options||[],optionMap:(r.option_order||[0,1,2,3,4]).map(Number),
+    correctAnswer:Number(r.correct_option_display),
+    explanation:remapExplanation(r.explanation,r.option_order||[0,1,2,3,4]),
+    reference:r.reference_text||''
+  }));
+  const answers={};const flagged=[];
+  review.forEach((r,i)=>{if(r.selected_option_display!==null&&r.selected_option_display!==undefined)answers[i]=Number(r.selected_option_display);if(r.is_flagged)flagged.push(i)});
+  return {
+    id:data.attempt_id,sessionId:data.session_id,program:data.program,createdAt:data.finished_at,
+    startedAt:data.started_at,mode:data.mode,score:Number(data.score||0),correct:Number(data.correct||0),
+    answered:Number(data.answered||0),total:Number(data.total||questions.length),byArea:data.byArea||{},
+    wrongIds:(data.wrongIds||[]).map(Number),questions,answers,flagged
+  };
+}
+
 function App(){
  const [authUser,setAuthUser]=useState(null),[authLoading,setAuthLoading]=useState(true);
- const [profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false);
+ const [profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[profileError,setProfileError]=useState('');
  const [access,setAccess]=useState(null),[attempts,setAttempts]=useState([]),[wrongIds,setWrongIds]=useState([]),[favorites,setFavorites]=useState(()=>load(STORAGE.FAVORITES,[]));
  const [view,setView]=useState('dashboard'),[setup,setSetup]=useState({mode:'learn',area:'Semua',count:20,randomize:true});
  const [session,setSession]=useState(null),[lastAttempt,setLastAttempt]=useState(null),[message,setMessage]=useState(''),[paywall,setPaywall]=useState(false);
+ const [busy,setBusy]=useState({start:false,submit:false,checkout:false,review:false});
+
  useEffect(()=>save(STORAGE.FAVORITES,favorites),[favorites]);
  useEffect(()=>{let mounted=true;supabaseClient.auth.getSession().then(({data})=>{if(mounted){setAuthUser(data.session?.user||null);setAuthLoading(false)}});const {data:{subscription}}=supabaseClient.auth.onAuthStateChange((_e,s)=>{if(mounted){setAuthUser(s?.user||null);setAuthLoading(false)}});return()=>{mounted=false;subscription?.unsubscribe()}},[]);
- useEffect(()=>{if(authUser?.id)loadProfile();else{setProfile(null);setAccess(null);setAttempts([]);setWrongIds([])}},[authUser?.id]);
- useEffect(()=>{if(profile?.program){setSetup(prev=>({...prev,area:'Semua'}));setLastAttempt(null);localStorage.removeItem(STORAGE.SESSION);refreshAccess();loadCloudProgress(profile.program)}},[profile?.program]);
+ useEffect(()=>{if(authUser?.id)loadProfile();else{setProfile(null);setAccess(null);setAttempts([]);setWrongIds([]);setSession(null);setProfileError('')}},[authUser?.id]);
+ useEffect(()=>{if(profile?.program){setSetup(prev=>({...prev,area:'Semua'}));setLastAttempt(null);refreshAccess();loadCloudProgress(profile.program);restoreSession(profile.program)}},[profile?.program]);
 
- async function googleLogin(){const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});if(error)setMessage(error.message)}
+ async function googleLogin(){const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});if(error)setMessage('Login belum berhasil. Silakan coba lagi.')}
  async function signOut(){localStorage.removeItem(STORAGE.SESSION);setSession(null);setLastAttempt(null);await supabaseClient.auth.signOut();setView('dashboard')}
- async function loadProfile(){setProfileLoading(true);try{const {data,error}=await supabaseClient.from('profiles').select('*').eq('id',authUser.id).maybeSingle();if(error)throw error;setProfile(data||{id:authUser.id,full_name:authUser.user_metadata?.full_name||authUser.user_metadata?.name||'',email:authUser.email,institution:'',program:null,target_ukom:'2026',phone:''})}catch(e){setMessage('Profil belum dapat dimuat: '+e.message)}finally{setProfileLoading(false)}}
+ async function loadProfile(){setProfileLoading(true);setProfileError('');try{const {data,error}=await supabaseClient.from('profiles').select('*').eq('id',authUser.id).maybeSingle();if(error)throw error;setProfile(data||{id:authUser.id,full_name:authUser.user_metadata?.full_name||authUser.user_metadata?.name||'',email:authUser.email,institution:'',program:null,target_ukom:'2026',phone:''})}catch(e){setProfile(null);setProfileError('Profil belum dapat dimuat. Periksa koneksi lalu coba lagi.')}finally{setProfileLoading(false)}}
  async function saveProfile(form){const {data,error}=await supabaseClient.rpc('save_my_profile',{p_full_name:form.full_name,p_institution:form.institution,p_program:form.program,p_target_ukom:form.target_ukom||null,p_phone:form.phone||null});if(error)throw error;await loadProfile();return data}
- async function refreshAccess(){if(!authUser?.id)return;const {data,error}=await supabaseClient.rpc('get_my_access');if(error){setMessage('Status akses gagal dimuat: '+error.message);return}setAccess(data)}
- async function loadCloudProgress(program){try{const {data:rows,error}=await supabaseClient.from('attempts').select('id,mode,started_at,finished_at,score,total_questions,metadata').eq('user_id',authUser.id).order('finished_at',{ascending:false}).limit(100);if(error)throw error;const programRows=(rows||[]).filter(r=>(r.metadata?.program||'ners')===program);const ats=programRows.map(r=>({id:r.id,mode:r.mode,startedAt:r.started_at,createdAt:r.finished_at||r.started_at,score:Number(r.score||0),total:Number(r.total_questions||0),correct:Number(r.metadata?.correct||0),answered:Number(r.metadata?.answered||0),byArea:r.metadata?.byArea||{},wrongIds:r.metadata?.wrongIds||[]}));setAttempts(ats);const ids=new Set(programRows.map(r=>r.id));if(!ids.size){setWrongIds([]);return}const {data:ans}=await supabaseClient.from('attempt_answers').select('attempt_id,question_id,is_correct,answered_at').in('attempt_id',[...ids]).order('answered_at',{ascending:true});const wrong=new Set();(ans||[]).forEach(r=>{if(r.is_correct===true)wrong.delete(Number(r.question_id));else if(r.is_correct===false)wrong.add(Number(r.question_id))});setWrongIds([...wrong])}catch(e){setMessage('Riwayat belum dapat dimuat: '+e.message)}}
+ async function refreshAccess(){if(!authUser?.id)return;const {data,error}=await supabaseClient.rpc('get_my_access');if(error){setMessage('Status akses belum dapat dimuat. Silakan coba lagi.');return}setAccess(data)}
+ async function loadCloudProgress(program){try{const {data:rows,error}=await supabaseClient.from('attempts').select('id,mode,started_at,finished_at,score,total_questions,metadata').eq('user_id',authUser.id).order('finished_at',{ascending:false}).limit(100);if(error)throw error;const programRows=(rows||[]).filter(r=>(r.metadata?.program||'ners')===program);const ats=programRows.map(r=>({id:r.id,mode:r.mode,startedAt:r.started_at,createdAt:r.finished_at||r.started_at,score:Number(r.score||0),total:Number(r.total_questions||0),correct:Number(r.metadata?.correct||0),answered:Number(r.metadata?.answered||0),byArea:r.metadata?.byArea||{},wrongIds:r.metadata?.wrongIds||[]}));setAttempts(ats);const ids=new Set(programRows.map(r=>r.id));if(!ids.size){setWrongIds([]);return}const {data:ans,error:ansError}=await supabaseClient.from('attempt_answers').select('attempt_id,question_id,is_correct,answered_at').in('attempt_id',[...ids]).order('answered_at',{ascending:true});if(ansError)throw ansError;const wrong=new Set();(ans||[]).forEach(r=>{if(r.is_correct===true)wrong.delete(Number(r.question_id));else if(r.is_correct===false)wrong.add(Number(r.question_id))});setWrongIds([...wrong])}catch(e){setMessage('Riwayat belum dapat dimuat. Coba lagi beberapa saat lagi.')}}
  function updateSession(fn){setSession(prev=>{const next=typeof fn==='function'?fn(prev):fn;if(next)save(STORAGE.SESSION,next);return next})}
- async function startSession(cfg){const mode=cfg.mode;if(mode!=='trial'&&!access?.premium){setPaywall(true);return}if(mode==='trial'&&access?.trial_used){setMessage('Trial 20 soal untuk program ini sudah pernah digunakan.');return}if(mode==='wrong'&&!wrongIds.length){setMessage('Belum ada soal salah untuk diremediasi.');return}const count=mode==='tryout'?180:mode==='trial'?20:Math.min(Number(cfg.count)||20,180);setMessage('Mengambil soal dari Supabase…');const {data,error}=await supabaseClient.rpc('get_exam_questions',{p_limit:count,p_area:mode==='wrong'||cfg.area==='Semua'?null:cfg.area,p_ids:mode==='wrong'?wrongIds:null,p_mode:mode});if(error){if(String(error.message).includes('PREMIUM_REQUIRED'))setPaywall(true);else setMessage('Gagal mengambil soal: '+error.message);return}const qs=(data||[]).map(row=>prepareQuestion({id:Number(row.id),rumpun:row.area,subtopic:row.subtopic||'',text:row.vignette,options:[row.option_a,row.option_b,row.option_c,row.option_d,row.option_e],difficulty:row.difficulty,cognitiveLevel:row.cognitive_level,blueprintTag:row.blueprint_tag},cfg.randomize!==false));if(!qs.length){setMessage('Belum ada soal aktif untuk pilihan ini.');return}const s={mode,area:cfg.area,questions:qs,answers:{},flagged:[],current:0,startedAt:new Date().toISOString(),timeLeft:(mode==='tryout'?qs.length*60:null)};setSession(s);save(STORAGE.SESSION,s);setView('exam');setMessage('')}
- async function finishSession(){if(!session)return;try{setMessage('Menghitung hasil secara aman di Supabase…');const payload=session.questions.map((q,i)=>({question_id:Number(q.id),selected_option:session.answers[i]===undefined?null:Number((q.optionMap||[0,1,2,3,4])[session.answers[i]]),is_flagged:session.flagged.includes(i)}));const {data,error}=await supabaseClient.rpc('submit_ukom_attempt',{p_mode:session.mode,p_started_at:session.startedAt,p_answers:payload});if(error)throw error;const reviewMap=new Map((data.review||[]).map(r=>[Number(r.question_id),r]));const reviewQuestions=session.questions.map(q=>{const r=reviewMap.get(Number(q.id))||{};const originalCorrect=Number(r.correct_option);return{...q,correctAnswer:(q.optionMap||[0,1,2,3,4]).indexOf(originalCorrect),explanation:r.explanation||'Pembahasan belum tersedia.'}});const a={id:data.attempt_id,program:data.program,createdAt:data.finished_at,startedAt:session.startedAt,mode:session.mode,score:Number(data.score||0),correct:Number(data.correct||0),answered:Number(data.answered||0),total:Number(data.total||session.questions.length),byArea:data.byArea||{},wrongIds:(data.wrongIds||[]).map(Number),questions:reviewQuestions,answers:session.answers,flagged:session.flagged};localStorage.removeItem(STORAGE.SESSION);setSession(null);setLastAttempt(a);await refreshAccess();await loadCloudProgress(profile.program);setView('result');setMessage('')}catch(e){setMessage('Submit gagal: '+e.message)}}
- async function checkout(){try{setMessage('Membuat transaksi pembayaran…');const {data,error}=await supabaseClient.functions.invoke(APP_CONFIG.PAYMENT_EDGE_FUNCTION,{body:{program:profile.program,plan:'launch_30'}});if(error)throw error;if(data?.redirect_url){window.open(data.redirect_url,'_blank','noopener,noreferrer');setMessage('Halaman pembayaran dibuka. Setelah pembayaran berhasil, kembali ke aplikasi lalu klik Cek Status Akses.')}else throw new Error(data?.error||'redirect_url tidak diterima')}catch(e){console.error('Checkout error',e);setMessage('Pembayaran belum dapat diproses. Silakan coba kembali beberapa saat lagi.')} }
+
+ async function restoreSession(program){
+   try{
+     const {data,error}=await supabaseClient.rpc('resume_exam_session');
+     if(error)throw error;
+     if(!data){const local=load(STORAGE.SESSION,null);if(local?.program===program)localStorage.removeItem(STORAGE.SESSION);return}
+     const local=load(STORAGE.SESSION,null);
+     const restored=sessionFromPayload(data,local);
+     if(restored){setSession(restored);save(STORAGE.SESSION,restored);setView('exam');setMessage(local?.sessionId===restored.sessionId?'Sesi aktif dipulihkan dari perangkat ini.':'Sesi aktif dipulihkan dari server.')}
+   }catch(e){setMessage('Pemulihan sesi belum berhasil. Anda tetap dapat membuka dashboard dan mencoba lagi.')}
+ }
+
+ async function startSession(cfg){
+   if(busy.start)return;
+   const mode=cfg.mode;
+   if(mode!=='trial'&&!access?.premium){setPaywall(true);return}
+   if(mode==='trial'&&access?.trial_used){setMessage('Trial 20 soal untuk program ini sudah pernah digunakan.');return}
+   if(mode==='wrong'&&!wrongIds.length){setMessage('Belum ada soal salah untuk diremediasi.');return}
+   setBusy(x=>({...x,start:true}));setMessage('Menyiapkan sesi aman dari server…');
+   try{
+     const count=mode==='tryout'?180:mode==='trial'?20:Math.min(Number(cfg.count)||20,50);
+     const {data,error}=await supabaseClient.rpc('start_exam_session',{
+       p_mode:mode,p_limit:count,p_area:mode==='wrong'||cfg.area==='Semua'?null:cfg.area,
+       p_ids:mode==='wrong'?wrongIds:null,p_randomize:cfg.randomize!==false
+     });
+     if(error)throw error;
+     const s=sessionFromPayload(data,load(STORAGE.SESSION,null));
+     if(!s?.questions?.length)throw new Error('NO_ACTIVE_QUESTIONS');
+     setSession(s);save(STORAGE.SESSION,s);setView('exam');
+     setMessage(data?.resumed?'Sesi aktif sebelumnya dipulihkan.':'Sesi siap. Jawaban akan tetap tersimpan saat halaman direfresh.');
+   }catch(e){
+     const msg=String(e?.message||'');
+     if(msg.includes('PREMIUM_REQUIRED'))setPaywall(true);
+     else if(msg.includes('TRIAL_ALREADY_USED')){await refreshAccess();setMessage('Trial program ini sudah digunakan.')}
+     else setMessage('Sesi belum dapat dimulai. Periksa koneksi lalu coba lagi.');
+   }finally{setBusy(x=>({...x,start:false}))}
+ }
+
+ async function finishSession(){
+   if(!session||busy.submit)return;
+   setBusy(x=>({...x,submit:true}));setMessage('Menyimpan jawaban dan menghitung hasil…');
+   try{
+     const payload=session.questions.map((q,i)=>({
+       question_id:Number(q.id),
+       selected_option:session.answers[i]===undefined?null:Number((q.optionMap||[0,1,2,3,4])[session.answers[i]]),
+       is_flagged:session.flagged.includes(i)
+     }));
+     const {data,error}=await supabaseClient.rpc('submit_exam_session',{p_session_id:session.sessionId,p_answers:payload});
+     if(error)throw error;
+     const a=attemptFromPayload(data);
+     localStorage.removeItem(STORAGE.SESSION);setSession(null);setLastAttempt(a);
+     await refreshAccess();await loadCloudProgress(profile.program);
+     setView('result');setMessage('');
+   }catch(e){
+     const msg=String(e?.message||'');
+     setMessage(msg.includes('SESSION_EXPIRED')?'Waktu simulasi telah berakhir. Jawaban belum berhasil dikirim; hubungi bantuan bila masalah berlanjut.':'Jawaban belum tersimpan. Jawaban Anda tetap ada di perangkat; periksa koneksi lalu tekan Coba Kirim Lagi.');
+   }finally{setBusy(x=>({...x,submit:false}))}
+ }
+
+ async function openAttempt(attemptId){
+   if(busy.review)return;
+   setBusy(x=>({...x,review:true}));setMessage('Memuat pembahasan…');
+   try{
+     const {data,error}=await supabaseClient.rpc('get_attempt_review',{p_attempt_id:attemptId});
+     if(error)throw error;
+     setLastAttempt(attemptFromPayload(data));setView('result');setMessage('');
+   }catch(e){setMessage('Pembahasan riwayat belum dapat dimuat. Silakan coba lagi.')}
+   finally{setBusy(x=>({...x,review:false}))}
+ }
+
+ async function checkout(){
+   if(busy.checkout)return;
+   setBusy(x=>({...x,checkout:true}));setMessage('Menyiapkan pembayaran aman…');
+   try{
+     const requestId=crypto.randomUUID();
+     const {data,error}=await supabaseClient.functions.invoke(APP_CONFIG.PAYMENT_EDGE_FUNCTION,{body:{program:profile.program,plan:'launch_30',request_id:requestId}});
+     if(error)throw error;
+     if(data?.redirect_url){setMessage('Mengalihkan ke halaman pembayaran Midtrans…');window.location.assign(data.redirect_url);return}
+     throw new Error(data?.error||'PAYMENT_REDIRECT_MISSING');
+   }catch(e){console.error('Checkout error',e);setMessage('Pembayaran belum dapat diproses. Silakan tunggu sebentar lalu coba lagi.')}
+   finally{setBusy(x=>({...x,checkout:false}))}
+ }
 
  if(authLoading)return <Splash/>;
  if(!authUser)return <Marketing onLogin={googleLogin}/>;
- if(profileLoading||!profile)return <Splash text="Memuat profil mahasiswa…"/>;
+ if(profileLoading)return <Splash text="Memuat profil mahasiswa…"/>;
+ if(profileError&&!profile)return <LoadError message={profileError} onRetry={loadProfile} onSignOut={signOut}/>;
+ if(!profile)return <LoadError message="Profil tidak ditemukan." onRetry={loadProfile} onSignOut={signOut}/>;
  const complete=profile.full_name&&profile.institution&&['ners','d3','bidan'].includes(profile.program);
  if(!complete)return <Onboarding initial={profile} user={authUser} onSave={saveProfile}/>;
  const latest=attempts[0],avg=attempts.length?(attempts.reduce((a,b)=>a+b.score,0)/attempts.length).toFixed(1):0,best=attempts.length?Math.max(...attempts.map(a=>a.score)):0;
  const currentAreas=areasForProgram(profile.program);const aggregate={};currentAreas.forEach(a=>aggregate[a]={correct:0,total:0});attempts.slice(0,10).forEach(at=>Object.entries(at.byArea||{}).forEach(([a,v])=>{aggregate[a]||={correct:0,total:0};aggregate[a].correct+=v.correct;aggregate[a].total+=v.total}));
  const weakest=Object.entries(aggregate).filter(([,v])=>v.total>0).sort((a,b)=>(a[1].correct/a[1].total)-(b[1].correct/b[1].total))[0]?.[0];
- return <div className="min-h-screen">{view!=='exam'&&<TopNav profile={profile} access={access} setView={setView} onSignOut={signOut}/>} {view==='dashboard'&&<Dashboard profile={profile} access={access} attempts={attempts} latest={latest} avg={avg} best={best} aggregate={aggregate} weakest={weakest} wrongCount={wrongIds.length} message={message} onTrial={()=>startSession({mode:'trial',area:'Semua',count:20,randomize:true})} onPremium={()=>setView('setup')} onWrong={()=>startSession({mode:'wrong',area:'Semua',count:20,randomize:true})} onPricing={()=>setPaywall(true)} onRefresh={async()=>{await refreshAccess();await loadCloudProgress(profile.program)}} setView={setView}/>} {view==='setup'&&<Setup setup={setup} setSetup={setSetup} areas={currentAreas} premium={access?.premium} wrongCount={wrongIds.length} onStart={()=>startSession(setup)} onBack={()=>setView('dashboard')} onPricing={()=>setPaywall(true)}/>} {view==='exam'&&session&&<Exam session={session} setSession={updateSession} onFinish={finishSession} favorites={favorites} setFavorites={setFavorites}/>} {view==='result'&&lastAttempt&&<Result attempt={lastAttempt} onDashboard={()=>setView('dashboard')} onWeak={a=>{setSetup({mode:'learn',area:a,count:20,randomize:true});setView('setup')}}/>} {view==='history'&&<History attempts={attempts} onBack={()=>setView('dashboard')}/>} {view==='profile'&&<Profile profile={profile} onSave={async f=>{await saveProfile(f);setView('dashboard')}} onBack={()=>setView('dashboard')}/>} {view==='help'&&<Help onBack={()=>setView('dashboard')}/>} {paywall&&<Pricing onClose={()=>setPaywall(false)} onCheckout={checkout} onRefresh={refreshAccess} program={profile.program} message={message}/>}</div>
+
+ return <div className="min-h-screen">
+   {view!=='exam'&&<TopNav profile={profile} access={access} setView={setView} onSignOut={signOut}/>}
+   {view==='dashboard'&&<Dashboard profile={profile} access={access} attempts={attempts} latest={latest} avg={avg} best={best} aggregate={aggregate} weakest={weakest} wrongCount={wrongIds.length} message={message} onTrial={()=>startSession({mode:'trial',area:'Semua',count:20,randomize:true})} onPremium={()=>setView('setup')} onWrong={()=>startSession({mode:'wrong',area:'Semua',count:20,randomize:true})} onPricing={()=>setPaywall(true)} onRefresh={async()=>{await refreshAccess();await loadCloudProgress(profile.program)}} setView={setView}/>}
+   {view==='setup'&&<Setup setup={setup} setSetup={setSetup} areas={currentAreas} premium={access?.premium} wrongCount={wrongIds.length} onStart={()=>startSession(setup)} onBack={()=>setView('dashboard')} onPricing={()=>setPaywall(true)} busy={busy.start} message={message}/>}
+   {view==='exam'&&session&&<Exam session={session} setSession={updateSession} onFinish={finishSession} favorites={favorites} setFavorites={setFavorites} busy={busy.submit} message={message}/>}
+   {view==='result'&&lastAttempt&&<Result attempt={lastAttempt} onDashboard={()=>setView('dashboard')} onWeak={a=>{setSetup({mode:'learn',area:a,count:20,randomize:true});setView('setup')}}/>}
+   {view==='history'&&<History attempts={attempts} onBack={()=>setView('dashboard')} onOpen={openAttempt} busy={busy.review}/>}
+   {view==='profile'&&<Profile profile={profile} onSave={async f=>{await saveProfile(f);setView('dashboard')}} onBack={()=>setView('dashboard')}/>}
+   {view==='help'&&<Help onBack={()=>setView('dashboard')}/>}
+   {paywall&&<Pricing onClose={()=>setPaywall(false)} onCheckout={checkout} onRefresh={refreshAccess} program={profile.program} message={message} busy={busy.checkout}/>}
+ </div>
 }
 
+function LoadError({message,onRetry,onSignOut}){return <main className="min-h-screen bg-sky-50 grid place-items-center p-4"><div className="max-w-md w-full bg-white border border-sky-100 rounded-3xl p-7 text-center shadow-sm" role="alert"><div className="text-3xl">⚠️</div><h1 className="text-xl font-black mt-3">Data belum dapat dimuat</h1><p className="text-slate-600 mt-2">{message}</p><button onClick={onRetry} className="mt-5 w-full py-3 rounded-xl bg-sky-700 text-white font-black">Coba Lagi</button><button onClick={onSignOut} className="mt-2 w-full py-3 rounded-xl bg-slate-100 font-bold">Keluar</button></div></main>}
 function Splash({text='Memuat UKOM Health Pro…'}){return <div className="min-h-screen grid place-items-center bg-gradient-to-br from-sky-50 to-blue-100 text-slate-900"><div className="text-center"><div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white grid place-items-center font-black text-2xl mx-auto shadow-xl shadow-sky-200">H+</div><div className="font-black mt-4">{text}</div></div></div>}
 function Marketing({onLogin}){const faqs=[
 ['Apakah saya harus langsung membeli Premium?','Tidak. Pengguna baru dapat mencoba Trial 20 soal terlebih dahulu. Trial tersedia satu kali untuk setiap program yang dipilih.'],
