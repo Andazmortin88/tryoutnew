@@ -112,3 +112,19 @@ Remaining blockers:
 1. Configure branded transactional email provider secrets.
 2. Run one Midtrans Production end-to-end real-payment smoke test.
 3. Merge/deploy and perform final live-browser smoke test.
+
+
+## Update 2026-09-25 — payment idempotency hardening
+
+Additional payment regression completed:
+
+- Historical paid transactions with an already-linked subscription were backfilled with `subscription_applied_at`.
+- This prevents a late Midtrans retry from extending an old purchase a second time.
+- Atomic payment application test: first settlement activates one subscription; repeated settlement is idempotent.
+- Repeated settlement leaves expiry unchanged.
+- Payment-email outbox test: repeated queue calls keep one outbox row with the same ID.
+- Webhook upgraded to version 13.
+- Historical already-applied payments without an existing email outbox are skipped by the new branded-email path, preventing unexpected delayed emails.
+- Final legacy `UKOM NURSING PRO AI` label in the exam screen was removed.
+
+One historical D3 settlement has no directly linked subscription but the same user/program later received another D3 subscription. It is retained for manual accounting review rather than silently modifying entitlement.
