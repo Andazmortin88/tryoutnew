@@ -147,3 +147,31 @@ Next release gate:
 1. controlled Midtrans Production payment;
 2. verify settlement, subscription, outbox, and email delivery;
 3. only then activate Bidan + merge V5.
+
+
+## Update 2026-09-25 — Midtrans Production smoke test PASS
+
+A real D3 QRIS payment was completed successfully in Midtrans Production.
+
+Verified:
+- Order: `UKOM-D3-1790347035996-4b28be6c`
+- Amount: Rp40.000
+- Gateway status: `settlement`
+- Midtrans status code: `200`
+- Fraud status: `accept`
+- Payment method: `qris`
+- Payment time: 2026-09-25 21:37 WIB
+- Settlement time: 2026-09-25 21:38 WIB
+- `paid_at`: populated
+- `subscription_applied_at`: populated
+- D3 Premium access: active
+- D3 expiry: 2026-10-25 21:38 WIB
+- Payment email outbox: `sent`
+- `email_sent_at`: populated
+- Resend provider message ID: recorded
+- Webhook returned HTTP 200
+
+The full Production payment chain is therefore confirmed:
+`Midtrans Production -> verified webhook -> atomic subscription -> email outbox -> provider accepted email`.
+
+Inbox delivery should still be checked by the recipient because provider acceptance is not identical to final inbox placement.
