@@ -128,3 +128,22 @@ Additional payment regression completed:
 - Final legacy `UKOM NURSING PRO AI` label in the exam screen was removed.
 
 One historical D3 settlement has no directly linked subscription but the same user/program later received another D3 subscription. It is retained for manual accounting review rather than silently modifying entitlement.
+
+
+## Update 2026-09-25 — email secrets configured by owner
+
+The project owner confirmed that the Resend/Supabase email secrets have been entered.
+
+Configured intent:
+- `RESEND_API_KEY`
+- `PAYMENT_EMAIL_FROM`
+- admin/payment notification: `andazmortin@gmail.com`
+
+Backend email code is active in `midtrans-webhook` and uses the configured secrets at runtime.
+
+Important: the connector cannot read secret values back from Supabase, so **secret presence/delivery is not considered verified until a real webhook-driven email succeeds**.
+
+Next release gate:
+1. controlled Midtrans Production payment;
+2. verify settlement, subscription, outbox, and email delivery;
+3. only then activate Bidan + merge V5.
