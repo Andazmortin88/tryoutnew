@@ -84,3 +84,31 @@ The current production `main` branch must remain unchanged until all gates pass.
 - Ners active count remains 180.
 - D3 active count remains 180.
 - No Bidan trial attempts, exam sessions, or subscriptions were left behind by QA.
+
+
+## Update 2026-09-25 — Frontend QA + persistent trial lock
+
+Frontend static QA and three-program backend regression are now complete.
+
+PASS:
+- UKOM Health Pro branding only; legacy Nursing Pro branding removed.
+- Profesi Bidan available in onboarding/profile.
+- Program-specific Bidan areas match the 180-question bank.
+- Payment UI no longer claims a bank VA method that may not be active.
+- Premium expiry is shown when available.
+- Program switching and sign-out clear stale local exam state.
+- Trial anti-harvesting strengthened: the same unsubmitted 20-question set is reused even after its former expiry timestamp.
+- Second trial submit returns `TRIAL_ALREADY_USED`.
+- Ners, D3, and Bidan each return 20 trial questions and 180 Premium questions with correct program isolation.
+- Disposable QA users/subscriptions/sessions were cleaned up after testing.
+- Bidan remains `is_active=false`.
+
+Controlled release files added:
+- `supabase/V5_RELEASE_ACTIVATE_BIDAN.sql`
+- `supabase/V5_ROLLBACK_DEACTIVATE_BIDAN.sql`
+- `V5_FRONTEND_QA.md`
+
+Remaining blockers:
+1. Configure branded transactional email provider secrets.
+2. Run one Midtrans Production end-to-end real-payment smoke test.
+3. Merge/deploy and perform final live-browser smoke test.
