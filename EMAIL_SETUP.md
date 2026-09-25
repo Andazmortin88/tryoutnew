@@ -13,6 +13,14 @@ RESEND_API_KEY
 PAYMENT_EMAIL_FROM
 ```
 
+Admin/payment notification email is configured as:
+
+```text
+andazmortin@gmail.com
+```
+
+This address is also used as Reply-To for participant payment confirmations.
+
 Do not put either secret in `index.html`, GitHub, commits, screenshots, or chat.
 
 ## Recommended setup
@@ -79,5 +87,6 @@ Use one real controlled payment after Production is ready and verify:
 6. outbox status becomes `sent`
 7. `transactions.email_sent_at` populated
 8. the student receives the branded message
+9. admin notification is delivered to `andazmortin@gmail.com`
 
 Never manually mark the transaction or subscription successful during this test.
