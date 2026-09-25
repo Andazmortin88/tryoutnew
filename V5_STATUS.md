@@ -196,3 +196,35 @@ Inbox delivery should still be checked by the recipient because provider accepta
 Release caveats:
 - The Bidan bank remains internally `reviewed`; external midwifery expert validation is still recommended before labeling items `validated`.
 - A legacy Supabase Edge Function slug `midtrans-transaction` still exists but is not referenced by the production frontend; `create-midtrans-transaction` is the active checkout endpoint. Retire the legacy slug manually when convenient.
+
+
+## Update 2026-09-26 — Profesi Bidan professional-level rewrite completed
+
+The Profesi Bidan bank was temporarily disabled, revised, QA-checked, and reactivated.
+
+Verified post-rewrite:
+- 180/180 Bidan questions active.
+- 120 Analysis/Clinical reasoning items.
+- 60 Application items.
+- 60 Hard items.
+- Average vignette length ~597 characters; minimum 506, maximum 715.
+- A/B/C/D/E keys remain balanced at 36 each.
+- Average max/min option-length ratio = 1.17.
+- Items with option-length ratio >1.35 = 0.
+- Exact duplicate vignette groups = 0.
+- Missing explanations = 0.
+- Missing references = 0.
+- Live RPC smoke test returned 20 active Bidan-only trial questions.
+- Disposable QA user/session cleaned.
+
+Rollback backup:
+- `public.questions_bidan_backup_20260926`
+- `supabase/ROLLBACK_BIDAN_PRO_REVISION_20260926.sql`
+
+Housekeeping state:
+- QA auth users remaining: 0.
+- Production checkout frontend uses only `create-midtrans-transaction`.
+- `midtrans-env-check` is locked behind JWT and returns 404; it is not part of app flow.
+- Legacy Edge Function slug `midtrans-transaction` still exists in Supabase and should be deleted manually in the dashboard because no delete action is exposed through the connected Supabase tool.
+- Old pending Midtrans rows were preserved rather than deleted or reclassified to avoid altering financial audit history.
+- Gerontik tables/functions were left untouched.
