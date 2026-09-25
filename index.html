@@ -64,10 +64,10 @@ function App(){
  useEffect(()=>save(STORAGE.FAVORITES,favorites),[favorites]);
  useEffect(()=>{let mounted=true;supabaseClient.auth.getSession().then(({data})=>{if(mounted){setAuthUser(data.session?.user||null);setAuthLoading(false)}});const {data:{subscription}}=supabaseClient.auth.onAuthStateChange((_e,s)=>{if(mounted){setAuthUser(s?.user||null);setAuthLoading(false)}});return()=>{mounted=false;subscription?.unsubscribe()}},[]);
  useEffect(()=>{if(authUser?.id)loadProfile();else{setProfile(null);setAccess(null);setAttempts([]);setWrongIds([])}},[authUser?.id]);
- useEffect(()=>{if(profile?.program){refreshAccess();loadCloudProgress(profile.program)}},[profile?.program]);
+ useEffect(()=>{if(profile?.program){setSetup(prev=>({...prev,area:'Semua'}));setLastAttempt(null);localStorage.removeItem(STORAGE.SESSION);refreshAccess();loadCloudProgress(profile.program)}},[profile?.program]);
 
  async function googleLogin(){const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});if(error)setMessage(error.message)}
- async function signOut(){await supabaseClient.auth.signOut();setView('dashboard')}
+ async function signOut(){localStorage.removeItem(STORAGE.SESSION);setSession(null);setLastAttempt(null);await supabaseClient.auth.signOut();setView('dashboard')}
  async function loadProfile(){setProfileLoading(true);try{const {data,error}=await supabaseClient.from('profiles').select('*').eq('id',authUser.id).maybeSingle();if(error)throw error;setProfile(data||{id:authUser.id,full_name:authUser.user_metadata?.full_name||authUser.user_metadata?.name||'',email:authUser.email,institution:'',program:null,target_ukom:'2026',phone:''})}catch(e){setMessage('Profil belum dapat dimuat: '+e.message)}finally{setProfileLoading(false)}}
  async function saveProfile(form){const {data,error}=await supabaseClient.rpc('save_my_profile',{p_full_name:form.full_name,p_institution:form.institution,p_program:form.program,p_target_ukom:form.target_ukom||null,p_phone:form.phone||null});if(error)throw error;await loadProfile();return data}
  async function refreshAccess(){if(!authUser?.id)return;const {data,error}=await supabaseClient.rpc('get_my_access');if(error){setMessage('Status akses gagal dimuat: '+error.message);return}setAccess(data)}
