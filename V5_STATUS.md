@@ -68,3 +68,19 @@ Do **not** merge this branch into `main` until:
 ## Production safety
 
 The current production `main` branch must remain unchanged until all gates pass.
+
+
+## Update 2026-09-25 — Bidan import and backend QA
+
+- 180 REVIEWED-FINAL Profesi Bidan questions imported to Supabase.
+- Imported as `review_status=reviewed` and `is_active=false`.
+- IDs `2001–2180`.
+- A/B/C/D/E answer keys: 36 each.
+- Trial session locking test: PASS.
+- Premium gate test: PASS.
+- Premium 180-question retrieval (transactional rollback test): PASS.
+- Cross-program isolation: PASS.
+- Direct authenticated SELECT on question bank/backup tables: DENIED as intended.
+- Ners active count remains 180.
+- D3 active count remains 180.
+- No Bidan trial attempts, exam sessions, or subscriptions were left behind by QA.
