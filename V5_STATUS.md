@@ -175,3 +175,24 @@ The full Production payment chain is therefore confirmed:
 `Midtrans Production -> verified webhook -> atomic subscription -> email outbox -> provider accepted email`.
 
 Inbox delivery should still be checked by the recipient because provider acceptance is not identical to final inbox placement.
+
+
+## Production release completed — 2026-09-25
+
+- PR #1 merged to `main`.
+- Merge commit: `a0c4179f0a7938a12554c8d20e23de830ce4533e`.
+- GitHub Pages deployment for that commit completed successfully.
+- Profesi Bidan guarded activation migration applied successfully.
+- Active question counts:
+  - Ners: 180
+  - D3 Keperawatan: 180
+  - Profesi Bidan: 180
+- Post-activation Bidan trial smoke test returned 20 active Bidan questions only.
+- Disposable release-QA user/session cleaned up successfully.
+- Midtrans Production QRIS payment smoke test: PASS.
+- Subscription activation and expiry: PASS.
+- Payment email provider acceptance: PASS.
+
+Release caveats:
+- The Bidan bank remains internally `reviewed`; external midwifery expert validation is still recommended before labeling items `validated`.
+- A legacy Supabase Edge Function slug `midtrans-transaction` still exists but is not referenced by the production frontend; `create-midtrans-transaction` is the active checkout endpoint. Retire the legacy slug manually when convenient.
