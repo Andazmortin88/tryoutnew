@@ -1,4 +1,4 @@
-name: Verify production bundle
+name: Build production bundle
 
 on:
   push:
@@ -6,10 +6,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +21,17 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build compiled production bundle
         run: npm run build
-      - name: Upload compiled bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: ukom-production-bundle
-          path: |
-            dist
-            package-lock.json
+      - name: Publish compiled assets to branch
+        run: |
+          rm -rf assets
+          cp -R dist/assets ./assets
+          cp dist/index.html ./index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json index.html assets
+          if git diff --cached --quiet; then
+            echo "No compiled changes"
+          else
+            git commit -m "Build locked production bundle"
+            git push
+          fi
