@@ -1,7 +1,8 @@
 -- Applied to production on 2026-09-26. Preserve actual paid ledger entries.
 -- When Midtrans confirms a reversal of the order currently backing a Premium
 -- subscription, suspend access and cancel ongoing non-trial sessions.
--- A later independent paid order is not suspended by reversal of an older order.
+-- A later independently paid order reactivates for 30 days from that payment;
+-- active subscriptions still extend from their current expiry.
 -- Partial refunds also suspend access pending manual financial review.
 -- Existing EXECUTE grants remain service_role-only.
 CREATE OR REPLACE FUNCTION public.apply_paid_midtrans_transaction(p_order_id text, p_transaction_status text, p_payment_method text, p_gateway_transaction_id text, p_raw_response jsonb)
@@ -156,7 +157,7 @@ begin
   for update;
 
   if found then
-    v_base:=case when v_current.expires_at is not null and v_current.expires_at>v_now
+    v_base:=case when v_current.status='active' and v_current.expires_at is not null and v_current.expires_at>v_now
                  then v_current.expires_at else v_now end;
     v_exp:=v_base+interval '30 days';
 
@@ -187,8 +188,8 @@ begin
         plan_code='launch_30',
         amount=excluded.amount,
         status='active',
-        expires_at=greatest(coalesce(public.subscriptions.expires_at,v_now),v_now)+interval '30 days',
-        ends_at=greatest(coalesce(public.subscriptions.expires_at,v_now),v_now)+interval '30 days',
+        expires_at=(case when public.subscriptions.status='active' then greatest(coalesce(public.subscriptions.expires_at,v_now),v_now) else v_now end)+interval '30 days',
+        ends_at=(case when public.subscriptions.status='active' then greatest(coalesce(public.subscriptions.expires_at,v_now),v_now) else v_now end)+interval '30 days',
         transaction_id=excluded.transaction_id,
         provider='midtrans',
         provider_reference=excluded.provider_reference
