@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
     }
 
     let email = { configured: false } as any
-    if (verifiedPaid && !applied?.review_required) {
+    if (verifiedPaid && !applied?.review_required && !applied?.hold_email) {
       const { data: existingOutbox, error: existingOutboxError } = await admin
         .from('payment_email_outbox')
         .select('id,status')
