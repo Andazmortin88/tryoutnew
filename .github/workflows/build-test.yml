@@ -1,0 +1,37 @@
+name: V6 production build test
+
+on:
+  push:
+    branches: [v6-production-build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install locked dependencies
+        run: npm install --ignore-scripts
+      - name: Build production assets
+        run: npm run build
+      - name: Verify production output
+        run: |
+          test -f dist/index.html
+          test -f dist/assets/app.js
+          test -f dist/assets/app.css
+          ! grep -q '@babel/standalone' dist/index.html
+          ! grep -q 'cdn.tailwindcss.com' dist/index.html
+          ! grep -q 'unsafe-eval' dist/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ukom-health-pro-production-build
+          path: |
+            dist
+            package-lock.json
