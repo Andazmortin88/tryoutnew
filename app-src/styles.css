@@ -51,3 +51,17 @@ html{scroll-behavior:smooth} body{font-family:ui-sans-serif,system-ui,-apple-sys
 button:focus-visible,a:focus-visible,summary:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 @media print{.no-print{display:none!important}.print-break{break-before:page}}
 
+/* A single, skippable welcome for visitors. The landing page is already rendered behind it. */
+.brand-opening{position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;background:#071b35;color:white;isolation:isolate;animation:opening-reveal 2.9s ease-in-out both}
+.brand-opening::before{content:"";position:absolute;inset:-30%;z-index:-1;background:radial-gradient(circle at center,rgba(14,165,233,.25),transparent 53%);pointer-events:none}
+.brand-opening-scene{width:min(90vw,520px);text-align:center;transform-origin:center center;animation:opening-pass 2.9s cubic-bezier(.2,.7,.2,1) both;will-change:transform,opacity}
+.brand-opening-logo{display:block;width:clamp(136px,38vw,220px);height:auto;aspect-ratio:1;object-fit:contain;margin:0 auto;filter:drop-shadow(0 20px 36px rgba(2,132,199,.28))}
+.brand-opening-name{margin-top:clamp(8px,2vw,18px);font-size:clamp(27px,6vw,48px);font-weight:900;letter-spacing:-.045em;line-height:1.1;white-space:nowrap}
+.brand-opening-name span{color:#7dd3fc}
+.brand-opening-tagline{margin:12px auto 0;font-size:clamp(12px,2.5vw,16px);color:#cbd5e1;letter-spacing:.01em}
+.brand-opening-skip{position:absolute;top:max(20px,env(safe-area-inset-top));right:max(20px,env(safe-area-inset-right));z-index:1;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(255,255,255,.12);color:white;font-size:14px;font-weight:700;padding:11px 18px;min-height:44px;cursor:pointer}
+.brand-opening-skip:hover,.brand-opening-skip:focus-visible{background:rgba(255,255,255,.25)}
+@keyframes opening-pass{0%{transform:scale(.62);opacity:0}22%{transform:scale(1.06);opacity:1}44%,62%{transform:scale(1);opacity:1}100%{transform:scale(13);opacity:0}}
+@keyframes opening-reveal{0%,69%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.brand-opening{display:none}}
+
