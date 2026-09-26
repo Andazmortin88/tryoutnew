@@ -124,12 +124,12 @@ For all three programs:
 ## Remaining release checks that require a different validation channel
 1. Physical-device QA: Android Chrome, Samsung Internet and iPhone Safari, including 320/360/390/430/768/820/1024/1366 widths and portrait/landscape.
 2. Browser performance: Lighthouse/Core Web Vitals on the deployed site.
-3. Production supply-chain migration: replace browser Babel/Tailwind Play CDN runtime with a compiled, locked production bundle. The current runtime remains functional but is not the preferred final architecture.
+3. Production supply-chain migration: **CLOSED** — production now uses a compiled Vite/Tailwind bundle, exact pinned dependencies, npm lockfile, hashed local JS/CSS assets, and CSP; runtime Babel/Tailwind/React/Supabase CDNs were removed in PR #3.
 4. Operational restore drill for the whole service, not only the question-bank row snapshot.
 5. External human nursing/midwifery content review and subsequent psychometric pilot (difficulty, discrimination, distractor functioning, reliability).
 6. If password sign-in is enabled later, enable Supabase leaked-password protection.
 
 ## Release statement
-Core business-rule blockers from the audit (trial reset, server exam integrity, session recovery, submit idempotency, legacy payment bypass, checkout/subscription race, payment reversal recording, email concurrency, key-cycle exposure and major audited question inconsistencies) have been remediated and regression-tested.
+Core business-rule blockers from the audit (trial reset, server exam integrity, session recovery, submit idempotency, legacy payment bypass, checkout/subscription race, payment reversal recording, email concurrency, key-cycle exposure, major audited question inconsistencies, and runtime CDN supply-chain exposure) have been remediated and regression-tested.
 
 A public launch should not claim that the item bank is “externally validated” or equivalent to official UKOM. Use “latihan independen” and “internally reviewed” until human-panel and psychometric validation are completed.
