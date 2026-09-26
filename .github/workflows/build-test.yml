@@ -1,8 +1,8 @@
-name: V6 production build test
+name: V6 production build and verify
 
 on:
   push:
-    branches: [v6-production-build]
+    branches: [main, v6-production-build]
   workflow_dispatch:
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           git add index.html assets src/index.source.html package-lock.json
           if ! git diff --cached --quiet; then
             git commit -m "Build production assets [skip ci]"
-            git push origin HEAD:v6-production-build
+            git push origin HEAD:${GITHUB_REF_NAME}
           fi
       - uses: actions/upload-artifact@v4
         with:
