@@ -70,6 +70,15 @@ begin
     return jsonb_build_object('ok',true,'paid',false,'status',v_status,'order_id',v_trx.order_id);
   end if;
 
+  -- Preserve an owner-confirmed test payment in the financial ledger without
+  -- granting access or sending a delayed success email on webhook replay.
+  if v_trx.payment_resolution='owner_test_no_entitlement' then
+    return jsonb_build_object(
+      'ok',true,'paid',true,'hold_email',true,'no_new_entitlement',true,
+      'order_id',v_trx.order_id,'reason','OWNER_TEST_PAYMENT_CLOSED'
+    );
+  end if;
+
   -- A previously paid order without an entitlement marker is not safe to replay
   -- after a later settled order has already granted access to this account.
   -- Hold it for reconciliation instead of granting another 30 days.
