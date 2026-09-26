@@ -219,7 +219,7 @@ function App(){
    try{
      const payload=session.questions.map((q,i)=>({
        question_id:Number(q.id),
-       selected_option:session.answers[i]===undefined?null:Number((q.optionMap||[0,1,2,3,4])[session.answers[i]]),
+       selected_index:session.answers[i]===undefined?null:Number(session.answers[i]),
        is_flagged:session.flagged.includes(i)
      }));
      const {data,error}=await supabaseClient.rpc('submit_exam_session',{p_session_id:session.sessionId,p_answers:payload});
