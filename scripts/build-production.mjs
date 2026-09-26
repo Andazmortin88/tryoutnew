@@ -5,7 +5,7 @@ import { transformSync } from '@babel/core';
 import presetReact from '@babel/preset-react';
 
 const root=process.cwd();
-const sourcePath=path.join(root,'index.html');
+const sourcePath=fs.existsSync(path.join(root,'src/index.source.html'))?path.join(root,'src/index.source.html'):path.join(root,'index.html');
 const html=fs.readFileSync(sourcePath,'utf8');
 const dist=path.join(root,'dist');
 const assets=path.join(dist,'assets');
