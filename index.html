@@ -117,8 +117,8 @@ function remapExplanation(text,optionOrder){
   const tokenMap={A:'§A§',B:'§B§',C:'§C§',D:'§D§',E:'§E§'};
   let out=String(text);
   for(const l of LETTERS){
-    out=out.replace(new RegExp('(^|\\n)'+l+'([\\.\\:)])','gm',(_,p1,p2)=>p1+tokenMap[l]+p2);
-    out=out.replace(new RegExp('(Kunci jawaban:\\s*)'+l+'([\\.\\:)])','gi',(_,p1,p2)=>p1+tokenMap[l]+p2);
+    out=out.replace(new RegExp('(^|\\n)'+l+'([\\.\\:)])','gm'),(_,p1,p2)=>p1+tokenMap[l]+p2);
+    out=out.replace(new RegExp('(Kunci jawaban:\\s*)'+l+'([\\.\\:)])','gi'),(_,p1,p2)=>p1+tokenMap[l]+p2);
   }
   for(const l of LETTERS)out=out.replaceAll(tokenMap[l],originalToDisplay[l]||l);
   return out;
