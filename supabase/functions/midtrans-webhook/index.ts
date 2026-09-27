@@ -41,7 +41,7 @@ async function notifyOwner(admin: ReturnType<typeof createClient>, trx: {
       updated_at: new Date().toISOString() })
     .eq('transaction_id', trx.id)
     .in('status', ['pending', 'failed'])
-    .select('transaction_id,paid_at,expires_at,recipient_email,attempts')
+    .select('transaction_id,paid_at,expires_at,recipient_email,attempts,buyer_name,buyer_institution,buyer_email')
     .maybeSingle()
   if (claimError) throw claimError
   if (!claimed) return { skipped: true, reason: 'ALREADY_SENT_OR_NOT_READY' }
@@ -61,7 +61,6 @@ async function notifyOwner(admin: ReturnType<typeof createClient>, trx: {
   }
 
   try {
-    const { data: buyer } = await admin.from('profiles').select('full_name,email').eq('id', trx.user_id).maybeSingle()
     const idr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
     const date = (value: string | null) => value ? new Intl.DateTimeFormat('id-ID', {
       dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta',
@@ -70,8 +69,9 @@ async function notifyOwner(admin: ReturnType<typeof createClient>, trx: {
     const body = [
       'Pembayaran langganan UKOM Health Pro telah terverifikasi oleh Midtrans.',
       `Program: ${PROGRAM_LABEL[trx.program] || trx.program}`,
-      `Peserta: ${buyer?.full_name || '-'}`,
-      `Email peserta: ${buyer?.email || '-'}`,
+      `Nama peserta: ${claimed.buyer_name || '-'}`,
+      `Kampus/Institusi: ${claimed.buyer_institution || '-'}`,
+      `Email peserta: ${claimed.buyer_email || '-'}`,
       `Nominal: ${idr.format(trx.amount)}`,
       `Order ID: ${trx.order_id}`,
       `Dibayar: ${date(claimed.paid_at)}`,
@@ -219,10 +219,18 @@ Deno.serve(async (req) => {
           console.error('Owner notification payment guard failed:', paidError)
           return json({ error: 'NOTIFICATION_QUEUE_GUARD_FAILED' }, 500)
         }
+        // Snapshot profile details at verified payment time. Later profile edits
+        // must not change who appears in this transaction's notification.
+        const { data: buyer, error: buyerError } = await admin.from('profiles')
+          .select('full_name,institution,email').eq('id', trx.user_id).maybeSingle()
+        if (buyerError) console.error('Owner notification buyer lookup error:', buyerError)
         const { error: queueError } = await admin.from('payment_owner_notifications').insert({
           transaction_id: trx.id, order_id: trx.order_id, user_id: trx.user_id,
           program: trx.program, amount: trx.amount, recipient_email: OWNER_EMAIL,
           paid_at: paidTrx.paid_at, expires_at: applied.expires_at,
+          buyer_name: buyer?.full_name || null,
+          buyer_institution: buyer?.institution || null,
+          buyer_email: buyer?.email || null,
         })
         if (queueError && queueError.code !== '23505') {
           console.error('Owner notification queue error:', queueError)
