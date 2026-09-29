@@ -209,34 +209,32 @@ Deno.serve(async (req) => {
       return json({ error: 'PAYMENT_APPLY_FAILED' }, 500)
     }
 
-    // Only a newly granted subscription creates an owner notification. Replayed
-    // callbacks may retry an existing outbox entry but cannot create a second one.
+    // The transaction id is the outbox primary key. A replay can repair a
+    // previously missed notification, but cannot create a second one.
     let ownerNotification: Record<string, unknown> = { skipped: true }
     if (verifiedPaid && applied?.paid && !applied?.hold_email && !applied?.review_required) {
-      if (applied.idempotent === false) {
-        const { data: paidTrx, error: paidError } = await admin.from('transactions')
-          .select('paid_at,subscription_applied_at').eq('id', trx.id).single()
-        if (paidError || !paidTrx?.paid_at || !paidTrx.subscription_applied_at) {
-          console.error('Owner notification payment guard failed:', paidError)
-          return json({ error: 'NOTIFICATION_QUEUE_GUARD_FAILED' }, 500)
-        }
-        // Snapshot profile details at verified payment time. Later profile edits
-        // must not change who appears in this transaction's notification.
-        const { data: buyer, error: buyerError } = await admin.from('profiles')
-          .select('full_name,institution,email').eq('id', trx.user_id).maybeSingle()
-        if (buyerError) console.error('Owner notification buyer lookup error:', buyerError)
-        const { error: queueError } = await admin.from('payment_owner_notifications').insert({
-          transaction_id: trx.id, order_id: trx.order_id, user_id: trx.user_id,
-          program: trx.program, amount: trx.amount, recipient_email: OWNER_EMAIL,
-          paid_at: paidTrx.paid_at, expires_at: applied.expires_at,
-          buyer_name: buyer?.full_name || null,
-          buyer_institution: buyer?.institution || null,
-          buyer_email: buyer?.email || null,
-        })
-        if (queueError && queueError.code !== '23505') {
-          console.error('Owner notification queue error:', queueError)
-          return json({ error: 'NOTIFICATION_QUEUE_FAILED' }, 500)
-        }
+      const { data: paidTrx, error: paidError } = await admin.from('transactions')
+        .select('paid_at,subscription_applied_at').eq('id', trx.id).single()
+      if (paidError || !paidTrx?.paid_at || !paidTrx.subscription_applied_at) {
+        console.error('Owner notification payment guard failed:', paidError)
+        return json({ error: 'NOTIFICATION_QUEUE_GUARD_FAILED' }, 500)
+      }
+      // Snapshot profile details at verified payment time. Later profile edits
+      // must not change who appears in this transaction's notification.
+      const { data: buyer, error: buyerError } = await admin.from('profiles')
+        .select('full_name,institution,email').eq('id', trx.user_id).maybeSingle()
+      if (buyerError) console.error('Owner notification buyer lookup error:', buyerError)
+      const { error: queueError } = await admin.from('payment_owner_notifications').insert({
+        transaction_id: trx.id, order_id: trx.order_id, user_id: trx.user_id,
+        program: trx.program, amount: trx.amount, recipient_email: OWNER_EMAIL,
+        paid_at: paidTrx.paid_at, expires_at: applied.expires_at,
+        buyer_name: buyer?.full_name || null,
+        buyer_institution: buyer?.institution || null,
+        buyer_email: buyer?.email || null,
+      })
+      if (queueError && queueError.code !== '23505') {
+        console.error('Owner notification queue error:', queueError)
+        return json({ error: 'NOTIFICATION_QUEUE_FAILED' }, 500)
       }
       try {
         ownerNotification = await notifyOwner(admin, trx)
