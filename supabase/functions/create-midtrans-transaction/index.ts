@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
       ners: 'Profesi Ners',
       d3: 'D3 Keperawatan',
       bidan: 'Profesi Bidan',
+      apoteker: 'Profesi Farmasi (Apoteker)',
     }
 
     if (!Object.prototype.hasOwnProperty.call(labels, program)) {
