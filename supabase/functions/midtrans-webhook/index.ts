@@ -29,6 +29,7 @@ const OWNER_EMAIL = 'amzalmortinandas@gmail.com'
 const OWNER_FROM = 'UKOM Health Pro <pembayaran@email.ukom.nursinggeniuscare.co.id>'
 const PROGRAM_LABEL: Record<string, string> = {
   ners: 'Profesi Ners', d3: 'D3 Keperawatan', bidan: 'Profesi Bidan',
+  apoteker: 'Profesi Farmasi (Apoteker)',
 }
 
 // The payment ledger is authoritative. Email delivery never determines access.
