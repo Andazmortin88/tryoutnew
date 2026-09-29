@@ -46,6 +46,11 @@ html{scroll-behavior:smooth} body{font-family:ui-sans-serif,system-ui,-apple-sys
 @media (hover:hover){.premium-step.is-visible:hover{transform:translateY(-6px) rotateX(1deg);border-color:#7dd3fc;box-shadow:0 9px 0 #d9edf9,0 30px 40px -25px rgba(3,105,161,.42)}.premium-program.is-visible:hover{transform:translateY(-9px) rotateX(2deg) rotateY(-1deg);box-shadow:0 12px 0 var(--card-glow),0 36px 48px -24px rgba(15,23,42,.35)}.premium-program:hover::before{transform:scale(1.3)}.premium-program:hover .premium-program-action span{transform:translate(3px,-3px)}}
 .premium-program.is-visible:active,.premium-step.is-visible:active{transform:translateY(2px) scale(.992);filter:brightness(.985)}
 .landing-preview{position:relative;background:linear-gradient(150deg,#fff,#f3faff);border:1px solid #bae6fd;border-radius:30px;padding:clamp(1.2rem,3vw,2rem);box-shadow:0 8px 0 #dbeafe,0 32px 80px -20px rgba(2,6,23,.55)}
+.landing-preview-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.landing-preview-tab{min-height:52px;border:1px solid rgba(125,211,252,.4);border-radius:16px;padding:.6rem 1rem;background:rgba(255,255,255,.07);color:#e0f2fe;font-size:.88rem;font-weight:800;transition:transform .22s ease,background .22s ease,box-shadow .22s ease}
+.landing-preview-tab.is-selected{background:#e0f2fe;color:#075985;box-shadow:0 5px 0 #7dd3fc,0 14px 28px rgba(14,165,233,.2)}
+@media(hover:hover){.landing-preview-tab:hover{transform:translateY(-3px);background:rgba(224,242,254,.2)}.landing-preview-tab.is-selected:hover{background:#e0f2fe}}
+.landing-preview-tab:active{transform:translateY(2px)}
 .landing-preview-option{display:flex;align-items:center;gap:.9rem;padding:.6rem .8rem;margin-top:.5rem;border-radius:14px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:.88rem;font-weight:650;box-shadow:0 2px 0 #e2e8f0}
 .landing-preview-option span{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:9px;background:#f0f9ff;color:#0369a1;font-weight:900}
 .landing-preview-answer{padding:1rem;border-radius:16px;background:#e0f2fe}
@@ -56,6 +61,8 @@ html{scroll-behavior:smooth} body{font-family:ui-sans-serif,system-ui,-apple-sys
   .orb{width:min(235px,72vw);height:auto;aspect-ratio:1}.float-card{font-size:11px;max-width:48%;line-height:1.4}.float-card.a{left:0}.float-card.b{right:0}.float-card.c{left:0}
   .landing-hero .orb-wrap{min-height:285px}
   .premium-program{min-height:0}
+  .landing-preview-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .landing-preview-tab{font-size:.8rem;padding:.55rem .6rem}
   .mobile-app-card{border-radius:22px}
   .mobile-safe-bottom{padding-bottom:max(14px,env(safe-area-inset-bottom))}
   .mobile-safe-top{padding-top:max(8px,env(safe-area-inset-top))}
