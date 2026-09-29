@@ -140,7 +140,9 @@ Deno.serve(async (req) => {
         id: `ukom-${program}-launch30`,
         price: amount,
         quantity: 1,
-        name: `UKOM Health Pro - ${labels[program]} 30 Hari`,
+        name: program === 'apoteker'
+          ? 'UKOM Health Pro - Apoteker 30 Hari'
+          : `UKOM Health Pro - ${labels[program]} 30 Hari`,
       }],
       customer_details: {
         first_name: profile.full_name || user.user_metadata?.full_name || 'Mahasiswa',
