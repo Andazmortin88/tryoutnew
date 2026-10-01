@@ -55,6 +55,16 @@ html{scroll-behavior:smooth} body{font-family:ui-sans-serif,system-ui,-apple-sys
 .landing-preview-option span{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:9px;background:#f0f9ff;color:#0369a1;font-weight:900}
 .landing-preview-answer{padding:1rem;border-radius:16px;background:#e0f2fe}
 .landing-preview-answer summary:focus-visible{outline:3px solid #0284c7;outline-offset:3px}
+.registration-stats{background:linear-gradient(125deg,#082a51,#095a94 48%,#0d3971);position:relative;overflow:hidden}
+.registration-stats::before{content:"";position:absolute;width:440px;height:440px;border-radius:50%;background:rgba(56,189,248,.18);filter:blur(80px);top:-280px;right:-100px;pointer-events:none}
+.registration-stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1rem}
+.registration-stat{position:relative;min-width:0;padding:1.5rem 1rem;text-align:center;border-radius:1.5rem;border:1px solid rgba(186,230,253,.3);background:rgba(255,255,255,.09);box-shadow:0 6px 0 rgba(2,23,51,.22),0 20px 40px -30px rgba(0,0,0,.5);transition:transform .25s ease,box-shadow .25s ease}
+.registration-stat-total{background:rgba(125,211,252,.18)}
+.registration-stat-icon{display:grid;place-items:center;width:3.5rem;height:3.5rem;margin:0 auto 1rem;border-radius:1.1rem;background:rgba(14,165,233,.5);font-size:1.8rem}
+.registration-stat-number{font-size:clamp(2rem,4vw,3.1rem);line-height:1.1;font-weight:900;font-variant-numeric:tabular-nums}
+.registration-stat-label{margin-top:.7rem;color:#e0f2fe;font-size:.9rem;font-weight:750;line-height:1.35}
+@media(hover:hover){.registration-stat:hover{transform:translateY(-6px);box-shadow:0 12px 0 rgba(2,23,51,.2),0 30px 50px -30px rgba(0,0,0,.65)}}
+@media(max-width:900px){.registration-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.registration-stat-total{grid-column:1/-1}}
 @media(max-width:768px){
   body{background:#f0f9ff;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
   button,a,select,input{touch-action:manipulation}
