@@ -162,3 +162,23 @@ button:focus-visible,a:focus-visible,summary:focus-visible,select:focus-visible,
 @keyframes opening-pass{0%{transform:scale(.62);opacity:0}22%{transform:scale(1.06);opacity:1}44%,62%{transform:scale(1);opacity:1}100%{transform:scale(13);opacity:0}}
 @keyframes opening-reveal{0%,69%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.brand-opening{display:none}}
+
+/* Social links are presentation-only; no tracking embeds or external scripts. */
+.landing-social{margin-top:24px;padding:22px;border:1px solid #dceaf6;border-radius:22px;background:#f5faff;color:#0f172a;text-align:left}
+.landing-social-title{font-size:1.05rem;font-weight:800;margin:0}
+.landing-social-copy{font-size:.85rem;line-height:1.5;color:#475569;margin:6px 0 16px}
+.landing-social-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.landing-social-link{display:flex;align-items:center;gap:10px;min-height:58px;padding:12px;border-radius:15px;border:1px solid #dbe7f2;background:#fff;color:#0f172a;text-decoration:none;box-shadow:0 3px 0 #e2edf5;transition:transform .2s,box-shadow .2s}
+.landing-social-link:hover{transform:translateY(-3px);box-shadow:0 6px 16px #0c4a6e18}
+.landing-social-link:active{transform:translateY(1px)}
+.landing-social-link:focus-visible{outline:3px solid #0284c7;outline-offset:3px}
+.landing-social-icon{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border-radius:11px;background:#edf6ff;color:#075985}
+.landing-social-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.landing-social-link strong{display:block;font-size:.82rem;font-weight:800}
+.landing-social-link small{display:block;font-size:.68rem;color:#475569;overflow-wrap:anywhere;margin-top:2px}
+.landing-social--instagram .landing-social-icon{background:#fff1f2;color:#be123c}
+.landing-social--tiktok .landing-social-icon{background:#f1f5f9;color:#0f172a}
+.landing-social--facebook .landing-social-icon{background:#eff6ff;color:#1d4ed8}
+.landing-social--youtube .landing-social-icon{background:#fef2f2;color:#b91c1c}
+@media(max-width:767px){.landing-social-links{grid-template-columns:repeat(2,minmax(0,1fr))}.landing-social{padding:16px}.landing-social-link{padding:10px;gap:8px}}
+@media(prefers-reduced-motion:reduce){.landing-social-link{transition:none}.landing-social-link:hover{transform:none}}
