@@ -88,6 +88,8 @@ function attemptFromPayload(data){
 
 function App(){
  const [authUser,setAuthUser]=useState(null),[authLoading,setAuthLoading]=useState(true);
+ const profileRequest=useRef(0), currentAuthId=useRef(null);
+ currentAuthId.current=authUser?.id||null;
  const [profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[profileError,setProfileError]=useState('');
  const [access,setAccess]=useState(null),[attempts,setAttempts]=useState([]),[wrongIds,setWrongIds]=useState([]),[favorites,setFavorites]=useState(()=>load(STORAGE.FAVORITES,[]));
  const [view,setView]=useState('dashboard'),[setup,setSetup]=useState({mode:'learn',area:'Semua',count:20,randomize:true});
@@ -96,12 +98,25 @@ function App(){
 
  useEffect(()=>save(STORAGE.FAVORITES,favorites),[favorites]);
  useEffect(()=>{let mounted=true;supabaseClient.auth.getSession().then(({data})=>{if(mounted){setAuthUser(data.session?.user||null);setAuthLoading(false)}});const {data:{subscription}}=supabaseClient.auth.onAuthStateChange((_e,s)=>{if(mounted){setAuthUser(s?.user||null);setAuthLoading(false)}});return()=>{mounted=false;subscription?.unsubscribe()}},[]);
- useEffect(()=>{if(authUser?.id)loadProfile();else{setProfile(null);setAccess(null);setAttempts([]);setWrongIds([]);setSession(null);setProfileError('')}},[authUser?.id]);
+ useEffect(()=>{setProfile(null);if(authUser?.id)loadProfile();else{setProfileLoading(false);setAccess(null);setAttempts([]);setWrongIds([]);setSession(null);setProfileError('')}return()=>{profileRequest.current++}},[authUser?.id]);
  useEffect(()=>{if(profile?.program){setSetup(prev=>({...prev,area:'Semua'}));setLastAttempt(null);refreshAccess();loadCloudProgress(profile.program);restoreSession(profile.program)}},[profile?.program]);
 
  async function googleLogin(){const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});if(error)setMessage('Login belum berhasil. Silakan coba lagi.')}
  async function signOut(){localStorage.removeItem(STORAGE.SESSION);setSession(null);setLastAttempt(null);await supabaseClient.auth.signOut();setView('dashboard')}
- async function loadProfile(){setProfileLoading(true);setProfileError('');try{const {data,error}=await supabaseClient.from('profiles').select('*').eq('id',authUser.id).maybeSingle();if(error)throw error;setProfile(data||{id:authUser.id,full_name:authUser.user_metadata?.full_name||authUser.user_metadata?.name||'',email:authUser.email,institution:'',program:null,target_ukom:'2026',phone:''})}catch(e){setProfile(null);setProfileError('Profil belum dapat dimuat. Periksa koneksi lalu coba lagi.')}finally{setProfileLoading(false)}}
+ async function loadProfile(){
+   const userId=authUser?.id;if(!userId)return;
+   const request=++profileRequest.current;
+   const isCurrent=()=>request===profileRequest.current&&currentAuthId.current===userId;
+   setProfileLoading(true);setProfileError('');
+   try{
+     const {data,error}=await supabaseClient.rpc('sync_my_profile');
+     if(error)throw error;
+     if(!data||data.id!==userId)throw new Error('PROFILE_SYNC_FAILED');
+     if(isCurrent())setProfile(data);
+   }catch(e){if(isCurrent()){setProfile(null);setProfileError('Profil belum dapat disinkronkan ke server. Periksa koneksi lalu coba lagi.')}}
+   finally{if(isCurrent())setProfileLoading(false)}
+ }
+
  async function saveProfile(form){const {data,error}=await supabaseClient.rpc('save_my_profile',{p_full_name:form.full_name,p_institution:form.institution,p_program:form.program,p_target_ukom:form.target_ukom||null,p_phone:form.phone||null});if(error)throw error;try{sessionStorage.removeItem(STORAGE.PREFERRED_PROGRAM)}catch{}await loadProfile();return data}
  async function refreshAccess(){if(!authUser?.id)return;const {data,error}=await supabaseClient.rpc('get_my_access');if(error){setMessage('Status akses belum dapat dimuat. Silakan coba lagi.');return}setAccess(data)}
  async function loadCloudProgress(program){try{const {data:rows,error}=await supabaseClient.from('attempts').select('id,mode,started_at,finished_at,score,total_questions,metadata').eq('user_id',authUser.id).order('finished_at',{ascending:false}).limit(100);if(error)throw error;const programRows=(rows||[]).filter(r=>(r.metadata?.program||'ners')===program);const ats=programRows.map(r=>({id:r.id,mode:r.mode,startedAt:r.started_at,createdAt:r.finished_at||r.started_at,score:Number(r.score||0),total:Number(r.total_questions||0),correct:Number(r.metadata?.correct||0),answered:Number(r.metadata?.answered||0),byArea:r.metadata?.byArea||{},wrongIds:r.metadata?.wrongIds||[]}));setAttempts(ats);const ids=new Set(programRows.map(r=>r.id));if(!ids.size){setWrongIds([]);return}const {data:ans,error:ansError}=await supabaseClient.from('attempt_answers').select('attempt_id,question_id,is_correct,answered_at').in('attempt_id',[...ids]).order('answered_at',{ascending:true});if(ansError)throw ansError;const wrong=new Set();(ans||[]).forEach(r=>{if(r.is_correct===true)wrong.delete(Number(r.question_id));else if(r.is_correct===false)wrong.add(Number(r.question_id))});setWrongIds([...wrong])}catch(e){setMessage('Riwayat belum dapat dimuat. Coba lagi beberapa saat lagi.')}}
@@ -191,7 +206,7 @@ function App(){
 
  if(authLoading)return <Splash/>;
  if(!authUser)return <CinematicLanding onLogin={googleLogin}/>;
- if(profileLoading)return <Splash text="Memuat profil mahasiswa…"/>;
+ if(profileLoading||(profile&&profile.id!==authUser.id))return <Splash text="Memuat profil mahasiswa…"/>;
  if(profileError&&!profile)return <LoadError message={profileError} onRetry={loadProfile} onSignOut={signOut}/>;
  if(!profile)return <LoadError message="Profil tidak ditemukan." onRetry={loadProfile} onSignOut={signOut}/>;
  const complete=profile.full_name&&profile.institution&&['ners','d3','bidan','apoteker'].includes(profile.program);
@@ -308,22 +323,27 @@ function UkomStudyTips({onLogin}){
  return <section id="tips-ukom" className="ukom-tips py-16 md:py-20 bg-sky-50" aria-labelledby="tips-ukom-title"><div className="max-w-7xl mx-auto px-4 md:px-8"><div className="max-w-3xl"><p className="text-xs font-black tracking-widest text-sky-700">TIPS & TRIK MENGERJAKAN UKOM</p><h2 id="tips-ukom-title" className="text-3xl md:text-5xl font-black mt-3">Pahami kasus, lalu pilih keputusan paling tepat.</h2><p className="text-slate-600 mt-4 leading-7">Strategi membaca vignette untuk Ners, D3 Keperawatan, Bidan, dan Apoteker. Gunakan sesuai konteks dan kewenangan masing-masing profesi.</p></div><div className="ukom-tips-grid mt-9">{tips.map(([number,title,description,tag])=><article key={number} className="ukom-tip-card premium-enter"><div className="flex items-start justify-between gap-4"><span className="ukom-tip-number" aria-hidden="true">{number}</span><span className="ukom-tip-tag">{tag}</span></div><h3 className="font-black text-xl mt-6">{title}</h3><p className="text-sm text-slate-600 leading-7 mt-3">{description}</p></article>)}</div><div className="ukom-tips-cta mt-9"><div><p className="font-black text-xl">Coba strateginya pada 20 soal gratis.</p><p className="text-sky-100 text-sm mt-2">Pembahasan dan alasan pilihan A–E tersedia setelah sesi dikirim. Hasil latihan bukan prediksi kelulusan UKOM.</p></div><button type="button" onClick={onLogin} className="shrink-0 rounded-2xl bg-white px-6 py-3.5 text-sky-800 font-black hover:bg-sky-50 focus-visible:outline focus-visible:outline-4 focus-visible:outline-sky-300">Mulai trial gratis →</button></div></div></section>;
 }
 function RegistrationStats(){
- const [stats,setStats]=useState(null);
+ const [stats,setStats]=useState(null),[stale,setStale]=useState(false);
  useEffect(()=>{
-   let active=true;
+   let active=true,inFlight=false;
    const refresh=async()=>{
-     if(document.visibilityState==='hidden')return;
-     const {data,error}=await supabaseClient.from('registration_stats').select('total_registered,ners,d3,bidan,apoteker,updated_at').eq('id',1).maybeSingle();
-     if(active){if(!error&&data)setStats(data);else setStats(null)}
+     if(document.visibilityState==='hidden'||inFlight)return;
+     inFlight=true;
+     try{
+       const {data,error}=await supabaseClient.from('registration_stats').select('total_registered,ners,d3,bidan,apoteker,updated_at').eq('id',1).maybeSingle();
+       if(error||!data)throw new Error('STATS_UNAVAILABLE');
+       if(active){setStats(data);setStale(false)}
+     }catch{if(active)setStale(true)}finally{inFlight=false}
    };
    refresh();
-   const interval=window.setInterval(refresh,120000);
+   const interval=window.setInterval(refresh,30000);
    document.addEventListener('visibilitychange',refresh);
-   return()=>{active=false;window.clearInterval(interval);document.removeEventListener('visibilitychange',refresh)};
+   window.addEventListener('focus',refresh);window.addEventListener('online',refresh);
+   return()=>{active=false;window.clearInterval(interval);document.removeEventListener('visibilitychange',refresh);window.removeEventListener('focus',refresh);window.removeEventListener('online',refresh)};
  },[]);
  if(!stats)return null;
  const groups=[['ners','Profesi Ners','🩺'],['d3','D3 Keperawatan','🏥'],['bidan','Profesi Bidan','🤱'],['apoteker','Profesi Farmasi (Apoteker)','💊']];
- return <section className="registration-stats py-14 md:py-20 text-white" aria-labelledby="registration-stats-title"><div className="max-w-7xl mx-auto px-4 md:px-8"><div className="text-center"><p className="text-xs font-black tracking-widest text-sky-200">KOMUNITAS UKOM HEALTH PRO</p><h2 id="registration-stats-title" className="text-3xl md:text-5xl font-black mt-3">Bertumbuh bersama empat program.</h2><p className="text-sky-100 mt-4">Data pendaftar dari profil aplikasi, diperbarui otomatis.</p></div><div className="registration-stats-grid mt-9"><div className="registration-stat registration-stat-total"><span className="registration-stat-icon" aria-hidden="true">👥</span><AnimatedRegistrationCount value={stats.total_registered}/><div className="registration-stat-label">Akun terdaftar</div></div>{groups.map(([id,label,icon])=><div key={id} className="registration-stat"><span className="registration-stat-icon" aria-hidden="true">{icon}</span><AnimatedRegistrationCount value={stats[id]}/><div className="registration-stat-label">{label}</div></div>)}</div><p className="text-center text-xs text-sky-200 mt-6">Jumlah per program menghitung profil yang telah memilih program. Sebagian akun masih melengkapi profilnya.</p></div></section>
+ return <section className="registration-stats py-14 md:py-20 text-white" aria-labelledby="registration-stats-title"><div className="max-w-7xl mx-auto px-4 md:px-8"><div className="text-center"><p className="text-xs font-black tracking-widest text-sky-200">KOMUNITAS UKOM HEALTH PRO</p><h2 id="registration-stats-title" className="text-3xl md:text-5xl font-black mt-3">Bertumbuh bersama empat program.</h2><p className="text-sky-100 mt-4">{stale?'Koneksi terputus sementara. Menampilkan data terakhir yang berhasil dimuat.':'Data pendaftar dari profil aplikasi, diperbarui otomatis setiap 30 detik.'}</p></div><div className="registration-stats-grid mt-9"><div className="registration-stat registration-stat-total"><span className="registration-stat-icon" aria-hidden="true">👥</span><AnimatedRegistrationCount value={stats.total_registered}/><div className="registration-stat-label">Akun terdaftar</div></div>{groups.map(([id,label,icon])=><div key={id} className="registration-stat"><span className="registration-stat-icon" aria-hidden="true">{icon}</span><AnimatedRegistrationCount value={stats[id]}/><div className="registration-stat-label">{label}</div></div>)}</div><p className="text-center text-xs text-sky-200 mt-6">Jumlah per program menghitung profil yang telah memilih program. Sebagian akun masih melengkapi profilnya.</p></div></section>
 }
 function LandingQuestionPreview({onLogin}){
  const [selected,setSelected]=useState('ners');
