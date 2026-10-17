@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Scroll-led presentation, scoped to the public landing page. */
-.landing-nav{background:rgba(255,255,255,.82)!important;backdrop-filter:blur(22px) saturate(150%)}
+.landing-nav{background:#fff!important;backdrop-filter:blur(22px) saturate(150%)}
 .landing-hero h1{letter-spacing:-.055em;line-height:1.07}
 .landing-hero .orb-wrap{transform:translateY(var(--hero-shift,0px));transition:transform .1s linear}
 .hero-program-orbit{position:absolute;inset:0;pointer-events:none}
@@ -150,9 +150,9 @@ button:focus-visible,a:focus-visible,summary:focus-visible,select:focus-visible,
 @media print{.no-print{display:none!important}.print-break{break-before:page}}
 
 /* A single, skippable welcome for visitors. The landing page is already rendered behind it. */
-.brand-opening{position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;background:#071b35;color:white;isolation:isolate;animation:opening-reveal 2.9s ease-in-out both}
+.brand-opening{position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;background:#071b35;color:white;isolation:isolate;animation:opening-reveal 1.2s ease-in-out both}
 .brand-opening::before{content:"";position:absolute;inset:-30%;z-index:-1;background:radial-gradient(circle at center,rgba(14,165,233,.25),transparent 53%);pointer-events:none}
-.brand-opening-scene{width:min(90vw,520px);text-align:center;transform-origin:center center;animation:opening-pass 2.9s cubic-bezier(.2,.7,.2,1) both;will-change:transform,opacity}
+.brand-opening-scene{width:min(90vw,520px);text-align:center;transform-origin:center center;animation:opening-pass 1.2s cubic-bezier(.2,.7,.2,1) both;will-change:transform,opacity}
 .brand-opening-logo{display:block;width:clamp(136px,38vw,220px);height:auto;aspect-ratio:1;object-fit:contain;margin:0 auto;filter:drop-shadow(0 20px 36px rgba(2,132,199,.28))}
 .brand-opening-name{margin-top:clamp(8px,2vw,18px);font-size:clamp(27px,6vw,48px);font-weight:900;letter-spacing:-.045em;line-height:1.1;white-space:nowrap}
 .brand-opening-name span{color:#7dd3fc}
