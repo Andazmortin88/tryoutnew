@@ -5,7 +5,7 @@ import path from 'node:path';
 
 // Public editorial pages only. Never read profiles, transactions or the question bank.
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const base='https://andazmortin88.github.io/tryoutnew/';
+const base='https://ukom.nursinggeniuscare.co.id/';
 const updated='2026-10-17';
 const esc=s=>s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
 const programs=[
