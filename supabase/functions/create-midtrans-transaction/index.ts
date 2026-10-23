@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 function makeCors(req: Request, appUrl: string) {
   const appOrigin = new URL(appUrl).origin
   const origin = req.headers.get('Origin')
-  const allowed = !origin || origin === appOrigin
+  const allowedOrigins = new Set([appOrigin, 'https://andazmortin88.github.io', 'https://ukom.nursinggeniuscare.co.id'])
+  const allowed = !origin || allowedOrigins.has(origin)
   return {
     allowed,
     headers: {
@@ -24,7 +25,7 @@ function json(body: unknown, status = 200, headers: Record<string,string> = {}) 
 }
 
 Deno.serve(async (req) => {
-  const appUrl = Deno.env.get('APP_URL') || 'https://andazmortin88.github.io/tryoutnew/'
+  const appUrl = 'https://ukom.nursinggeniuscare.co.id/'
   const cors = makeCors(req, appUrl)
 
   if (!cors.allowed) return json({ error: 'ORIGIN_NOT_ALLOWED' }, 403, cors.headers)
