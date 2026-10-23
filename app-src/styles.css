@@ -182,3 +182,15 @@ button:focus-visible,a:focus-visible,summary:focus-visible,select:focus-visible,
 .landing-social--youtube .landing-social-icon{background:#fef2f2;color:#b91c1c}
 @media(max-width:767px){.landing-social-links{grid-template-columns:repeat(2,minmax(0,1fr))}.landing-social{padding:16px}.landing-social-link{padding:10px;gap:8px}}
 @media(prefers-reduced-motion:reduce){.landing-social-link{transition:none}.landing-social-link:hover{transform:none}}
+
+/* Reading sizes for the application, including mobile forms and saved results. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-size:18px;line-height:1.75;background:#f3fbff}
+input,select,textarea{font-size:16px;line-height:1.6}
+#root .text-xs{font-size:14px;line-height:1.6}
+#root .text-sm{font-size:16px;line-height:1.7}
+#root [class~="text-[10px]"],#root [class~="text-[11px]"]{font-size:13px;line-height:1.5}
+.exam-stem p{font-size:20px!important;line-height:1.85!important}
+.exam-option .option-text{font-size:18px;line-height:1.8}
+@media(max-width:767px){.exam-actions button,.exam-timer{font-size:14px}.exam-option .option-text{font-size:18px;line-height:1.8}.exam-bottom button{font-size:15px}.exam-stem{padding:22px!important}}
+@media(max-width:767px){.exam-main-header{flex-wrap:wrap;align-items:flex-start}.exam-main-header>div:first-child{flex:1 0 100%}.exam-actions{width:100%;flex-wrap:wrap;gap:8px}.exam-actions button{flex:1;min-height:44px}.exam-timer{min-height:44px;display:flex;align-items:center}}
