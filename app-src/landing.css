@@ -62,3 +62,13 @@
 .uhp-price-card .uhp-price-value{color:#075985}
 .uhp-price-card .uhp-price-old{color:#5d6e7e}
 .uhp-price-card>p:not(.uhp-price-old):not(.uhp-price-value){color:#486277}
+
+/* Four-plan pricing comparison - mobile-first */
+.uhp-plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0 14px}
+.uhp-plan-option{min-width:0;display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid #cbd5e1;border-radius:16px;background:#f8fafc;color:#0f172a}
+.uhp-plan-option strong{font-size:1rem;font-weight:800;line-height:1.2}
+.uhp-plan-name{font-size:.75rem;font-weight:700;color:#475569}
+.uhp-plan-price{font-size:clamp(1rem,2vw,1.35rem);font-weight:900;color:#0369a1;white-space:nowrap}
+.uhp-plan-featured{border:2px solid #0284c7;background:#eff6ff}
+.uhp-plan-featured small{font-size:.67rem;color:#047857;font-weight:800}
+@media(max-width:400px){.uhp-plan-grid{gap:8px}.uhp-plan-option{padding:10px}.uhp-plan-price{font-size:.98rem}}
