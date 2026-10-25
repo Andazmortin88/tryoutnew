@@ -1,0 +1,15 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {base,logo,org,site,iconLinks,service} from './site-metadata.mjs';
+import {PREMIUM_PLANS} from '../app-src/plans.js';
+const target=new URL('../app-src/index.html',import.meta.url);
+let html=await readFile(target,'utf8');
+const graph=JSON.stringify({'@context':'https://schema.org','@graph':[org,site,{'@type':'WebPage','@id':base+'#webpage',url:base,name:'UKOM Health Pro — Latihan dan Tryout UKOM Online',isPartOf:{'@id':base+'#website'},about:{'@id':base+'#service'},primaryImageOfPage:{'@id':base+'#logo'},inLanguage:'id-ID'},service(PREMIUM_PLANS)]});
+html=html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/,'<script type="application/ld+json">'+graph+'</script>');
+const hash=createHash('sha256').update(graph).digest('base64');
+html=html.replace(/'sha256-[^']+'/,"'sha256-"+hash+"'");
+html=html.replace(/<link rel="(?:icon|shortcut icon|apple-touch-icon)"[^>]*>\s*/g,'');
+html=html.replace('</head>',iconLinks+'\n</head>');
+html=html.replace(/(<meta property="og:image" content=")[^"]+/,(_,prefix)=>prefix+logo);
+if(!html.includes('href="paket-ukom.html"'))html=html.replace('</nav></noscript>',' · <a href="paket-ukom.html">Harga dan paket UKOM</a> · <a href="tentang-ukom-health-pro.html">Tentang UKOM Health Pro</a></nav></noscript>');
+await writeFile(target,html);

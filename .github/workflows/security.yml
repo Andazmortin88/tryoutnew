@@ -19,5 +19,6 @@ jobs:
       - run: node supabase/functions/test-webhook-money.cjs
       - run: node scripts/webhook-security-test.cjs
       - run: npm run build
+      - run: node scripts/check-seo.mjs
 
 
