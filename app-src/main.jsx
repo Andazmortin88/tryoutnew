@@ -120,8 +120,15 @@ function App(){
  async function saveProfile(form){const {data,error}=await supabaseClient.rpc('save_my_profile',{p_full_name:form.full_name,p_institution:form.institution,p_program:form.program,p_target_ukom:form.target_ukom||null,p_phone:form.phone||null});if(error)throw error;try{sessionStorage.removeItem(STORAGE.PREFERRED_PROGRAM)}catch{}await loadProfile();return data}
  async function refreshAccess(){if(!authUser?.id)return;const {data,error}=await supabaseClient.rpc('get_my_access');if(error){setMessage('Status akses belum dapat dimuat. Silakan coba lagi.');return}setAccess(data)}
  async function loadCloudProgress(program){try{const {data:rows,error}=await supabaseClient.from('attempts').select('id,mode,started_at,finished_at,score,total_questions,metadata').eq('user_id',authUser.id).order('finished_at',{ascending:false}).limit(100);if(error)throw error;const programRows=(rows||[]).filter(r=>(r.metadata?.program||'ners')===program);const ats=programRows.map(r=>({id:r.id,mode:r.mode,startedAt:r.started_at,createdAt:r.finished_at||r.started_at,score:Number(r.score||0),total:Number(r.total_questions||0),correct:Number(r.metadata?.correct||0),answered:Number(r.metadata?.answered||0),byArea:r.metadata?.byArea||{},wrongIds:r.metadata?.wrongIds||[]}));setAttempts(ats);const ids=new Set(programRows.map(r=>r.id));if(!ids.size){setWrongIds([]);return}const {data:ans,error:ansError}=await supabaseClient.from('attempt_answers').select('attempt_id,question_id,is_correct,answered_at').in('attempt_id',[...ids]).order('answered_at',{ascending:true});if(ansError)throw ansError;const wrong=new Set();(ans||[]).forEach(r=>{if(r.is_correct===true)wrong.delete(Number(r.question_id));else if(r.is_correct===false)wrong.add(Number(r.question_id))});setWrongIds([...wrong])}catch(e){setMessage('Riwayat belum dapat dimuat. Coba lagi beberapa saat lagi.')}}
- function updateSession(fn){setSession(prev=>{const next=typeof fn==='function'?fn(prev):fn;if(next){save(STORAGE.SESSION,next);if(next.sessionId){clearTimeout(window.__ukomProgressTimer);window.__ukomProgressTimer=setTimeout(()=>{const payload=next.questions.map((q,i)=>({question_id:Number(q.id),selected_index:next.answers[i]===undefined?null:Number(next.answers[i]),is_flagged:next.flagged.includes(i)}));window.__ukomProgressChain=(window.__ukomProgressChain||Promise.resolve()).then(()=>supabaseClient.rpc('save_exam_progress',{p_session_id:next.sessionId,p_answers:payload})).then(({error})=>{if(error)console.warn('Progress sync failed')}).catch(()=>console.warn('Progress sync failed'))},350)}}return next})}
+ function updateSession(fn){setSession(prev=>{const next=typeof fn==='function'?fn(prev):fn;if(next){save(STORAGE.SESSION,next);if(next.sessionId){clearTimeout(window.__ukomProgressTimer);window.__ukomProgressTimer=setTimeout(()=>{const payload=next.questions.map((q,i)=>({question_id:Number(q.id),selected_index:next.answers[i]===undefined?null:Number(next.answers[i]),is_flagged:next.flagged.includes(i)}));window.__ukomProgressChain=(window.__ukomProgressChain||Promise.resolve()).then(()=>supabaseClient.rpc('save_exam_progress',{p_session_id:next.sessionId,p_answers:payload})).then(({error})=>{if(error&&!handleEntitlementError(error))console.warn('Progress sync failed')}).catch(()=>console.warn('Progress sync failed'))},350)}}return next})}
 
+ function handleEntitlementError(error){
+   if(!String(error?.message||'').includes('PREMIUM_REQUIRED'))return false;
+   setPaywall(true);
+   setMessage('Akses premium telah berakhir. Jawaban tetap tersimpan. Perpanjang paket untuk melanjutkan sesi.');
+   refreshAccess();
+   return true;
+ }
  async function restoreSession(program){
    try{
      const {data,error}=await supabaseClient.rpc('resume_exam_session');
@@ -130,7 +137,7 @@ function App(){
      const local=load(STORAGE.SESSION,null);
      const restored=sessionFromPayload(data,local);
      if(restored){setSession(restored);save(STORAGE.SESSION,restored);setView('exam');setMessage(local?.sessionId===restored.sessionId?'Sesi aktif dipulihkan dari perangkat ini.':'Sesi aktif dipulihkan dari server.')}
-   }catch(e){setMessage('Pemulihan sesi belum berhasil. Anda tetap dapat membuka dashboard dan mencoba lagi.')}
+   }catch(e){if(!handleEntitlementError(e))setMessage('Pemulihan sesi belum berhasil. Anda tetap dapat membuka dashboard dan mencoba lagi.')}
  }
 
  async function startSession(cfg){
@@ -176,6 +183,7 @@ function App(){
      setView('result');setMessage('');
    }catch(e){
      const msg=String(e?.message||'');
+     if(handleEntitlementError(e))return;
      setMessage(msg.includes('SESSION_EXPIRED')?'Waktu simulasi telah berakhir. Jawaban belum berhasil dikirim; hubungi bantuan bila masalah berlanjut.':'Jawaban belum tersimpan. Jawaban Anda tetap ada di perangkat; periksa koneksi lalu tekan Coba Kirim Lagi.');
    }finally{setBusy(x=>({...x,submit:false}))}
  }
