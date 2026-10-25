@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build --config vite.config.js && node scripts/build-seo.mjs"
+    "build": "node scripts/build-metadata.mjs && vite build --config vite.config.js && node scripts/build-seo.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.1",

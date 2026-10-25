@@ -46,9 +46,10 @@ jobs:
           mkdir -p assets
           cp -R dist/assets/. ./assets/
           cp dist/index.html ./index.html
+          cp dist/favicon-192.png dist/favicon-48.png dist/favicon.ico dist/apple-touch-icon.png dist/logo.png ./
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html assets *.html sitemap.xml robots.txt
+          git add index.html assets *.html sitemap.xml robots.txt favicon-192.png favicon-48.png favicon.ico apple-touch-icon.png logo.png
           if git diff --cached --quiet; then
             echo "Production compiled files already synchronized."
           else
