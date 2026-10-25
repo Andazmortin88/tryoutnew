@@ -1,0 +1,57 @@
+name: Build UKOM Health Pro production assets
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app-src/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'postcss.config.js'
+      - 'tailwind.config.js'
+      - 'vite.config.js'
+      - '.github/workflows/build-production-pricing.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ukom-production-compiled-assets
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build Vite and SEO static pages
+        run: npm run build
+      - name: Verify compiled landing and billing assets
+        run: |
+          test -f dist/index.html
+          test -d dist/assets
+          grep -q '10 soal gratis' tryout-ukom.html
+          if ! grep -q 'assets/index-.*.js' dist/index.html; then
+            echo 'Missing compiled Vite entrypoint' >&2
+            exit 1
+          fi
+      - name: Publish compiled assets on source branch
+        run: |
+          mkdir -p assets
+          cp -R dist/assets/. ./assets/
+          cp dist/index.html ./index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets *.html sitemap.xml robots.txt
+          if git diff --cached --quiet; then
+            echo "Production compiled files already synchronized."
+          else
+            git commit -m "Compile production pricing and free trial bundle [skip ci]"
+            git push
+          fi
