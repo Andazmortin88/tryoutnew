@@ -1,0 +1,43 @@
+name: Validate new pricing and 10 free questions
+on:
+  push:
+    branches: [feature/four-prices-free10-20261025]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Static offer consistency checks
+        run: |
+          node --input-type=module <<'EOF'
+          import {strict as assert} from 'node:assert';
+          import {readFileSync} from 'node:fs';
+          import {FREE_TRIAL_COUNT, PREMIUM_PLANS} from './app-src/plans.js';
+          assert.equal(FREE_TRIAL_COUNT,10);
+          assert.deepEqual(PREMIUM_PLANS.map(p=>[p.code,p.days,p.price]),[
+            ['sprint_3',3,20000],['intensif_7',7,29900],['launch_30',30,40000],['promo_90',90,79900],
+          ]);
+          const sql=readFileSync('./supabase/sql/2026-10-25-four-plans-free-trial-10.sql','utf8');
+          const edge=readFileSync('./supabase/functions/create-midtrans-transaction/index.ts','utf8');
+          assert(sql.includes('v_limit:=10'));
+          assert(sql.includes('not in (10,20)'));
+          for (const price of ['20000','29900','40000','79900']) {
+            assert(sql.includes(price));
+            assert(edge.includes(price));
+          }
+          const landing=readFileSync('./app-src/Landing.jsx','utf8');
+          assert(!landing.includes('20 soal'));
+          assert(landing.includes('10 soal'));
+          const seo=readFileSync('./scripts/build-seo.mjs','utf8');
+          assert(!seo.includes('20 soal'));
+          EOF

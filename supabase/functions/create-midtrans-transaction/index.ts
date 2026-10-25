@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     if (!Object.prototype.hasOwnProperty.call(labels, program)) {
       return json({ error: 'INVALID_PROGRAM' }, 400, cors.headers)
     }
-    if (plan !== 'launch_30') return json({ error: 'INVALID_PLAN' }, 400, cors.headers)
+    if (!['sprint_3', 'intensif_7', 'launch_30', 'promo_90'].includes(plan)) return json({ error: 'INVALID_PLAN' }, 400, cors.headers)
 
     const { data: profile, error: profileError } = await admin
       .from('profiles')
@@ -127,6 +127,10 @@ Deno.serve(async (req) => {
 
     const amount = Number(reserved.amount)
     const orderId = String(reserved.order_id)
+    const durationDays: Record<string,number> = { sprint_3: 3, intensif_7: 7, launch_30: 30, promo_90: 90 }
+    const prices: Record<string,number> = { sprint_3: 20000, intensif_7: 29900, launch_30: 40000, promo_90: 79900 }
+    // The SQL reservation is authoritative. Detect mismatched/legacy retries.
+    if (amount !== prices[plan]) return json({ error: 'PLAN_AMOUNT_MISMATCH' }, 409, cors.headers)
 
     const snapUrl = isProduction
       ? 'https://app.midtrans.com/snap/v1/transactions'
@@ -138,12 +142,10 @@ Deno.serve(async (req) => {
     const payload = {
       transaction_details: { order_id: orderId, gross_amount: amount },
       item_details: [{
-        id: `ukom-${program}-launch30`,
+        id: `ukom-${program}-${plan}`,
         price: amount,
         quantity: 1,
-        name: program === 'apoteker'
-          ? 'UKOM Health Pro - Apoteker 30 Hari'
-          : `UKOM Health Pro - ${labels[program]} 30 Hari`,
+        name: `UKOM Health Pro - ${labels[program]} ${durationDays[plan]} Hari`,
       }],
       customer_details: {
         first_name: profile.full_name || user.user_metadata?.full_name || 'Mahasiswa',
