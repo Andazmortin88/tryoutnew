@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.117.1'
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -257,3 +257,5 @@ Deno.serve(async (req) => {
     return json({ error: error?.message || 'INTERNAL_ERROR' }, 500)
   }
 })
+
+
