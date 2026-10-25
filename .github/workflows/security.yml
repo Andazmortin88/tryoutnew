@@ -17,5 +17,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm audit --audit-level=low
       - run: node supabase/functions/test-webhook-money.cjs
+      - run: node scripts/webhook-security-test.cjs
       - run: npm run build
+
 
